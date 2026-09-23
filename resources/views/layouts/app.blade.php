@@ -44,14 +44,39 @@
 
                 <nav class="flex items-center gap-4 text-sm">
                     @auth
-                        @if(auth()->user()->isKonsumen())
-                            <a href="{{ route('cart.index') }}" class="hover:text-accent-light flex items-center gap-1">
-                                🛒 Keranjang
-                            </a>
-                            <a href="{{ route('orders.index') }}" class="hover:text-accent-light">Pesanan Saya</a>
-                        @else
-                            <a href="{{ route('admin.dashboard') }}" class="hover:text-accent-light">Dashboard Admin</a>
-                        @endif
+                         @if(auth()->user()->isKonsumen())
+
+                        <a
+                            href="{{ route('cart.index') }}"
+                            class="hover:text-accent-light flex items-center gap-1"
+                >
+                    Keranjang
+                    </a>
+
+                <a
+                    href="{{ route('orders.index') }}"
+                    class="hover:text-accent-light"
+                >
+                    Pesanan Saya
+                </a>
+
+                <a
+                    href="{{ route('profile.show') }}"
+                    class="hover:text-accent-light"
+                >
+                    Profile
+                </a>
+
+        @else
+
+                <a
+                    href="{{ route('admin.dashboard') }}"
+                    class="hover:text-accent-light"
+                >
+                    Dashboard Admin
+                </a>
+
+        @endif
                         <span class="hidden sm:inline text-white/80">Hai, {{ auth()->user()->name }}</span>
                         <form action="{{ route('logout') }}" method="POST">
                             @csrf

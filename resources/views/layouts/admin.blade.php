@@ -57,7 +57,20 @@
             <a href="{{ route('admin.reports.pnbp') }}" class="block px-3 py-2 rounded-md hover:bg-white/10 {{ request()->routeIs('admin.reports.pnbp') ? 'bg-white/10 font-semibold' : '' }}">🧾 Laporan PNBP</a>
 
             <p class="px-3 pt-4 pb-1 text-xs uppercase tracking-wide text-white/50">Lainnya</p>
-            <a href="{{ route('catalog.index') }}" class="block px-3 py-2 rounded-md hover:bg-white/10">🛍️ Lihat Katalog</a>
+
+            <a
+                href="{{ route('profile.show') }}"
+                class="block px-3 py-2 rounded-md hover:bg-white/10 {{ request()->routeIs('profile.*') ? 'bg-white/10 font-semibold' : '' }}"
+            >
+                👤 Profile
+            </a>
+
+            <a
+                href="{{ route('catalog.index') }}"
+                class="block px-3 py-2 rounded-md hover:bg-white/10"
+            >
+                🛍️ Lihat Katalog
+            </a>
         </nav>
     </aside>
 
