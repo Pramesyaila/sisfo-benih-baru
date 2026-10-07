@@ -6,7 +6,10 @@
 <div class="page-header">
     <span class="page-header__eyebrow">Akun pelanggan</span>
     <h1 class="page-header__title">Profil saya</h1>
-    <p class="page-header__description">Kelola informasi dasar akun yang digunakan untuk:katalog dan pesanan.</p>
+    <p class="page-header__description">
+        Data di bawah ini sama dengan data yang Anda isi saat pendaftaran.
+        Data ini dipakai untuk menghubungi Anda, mencetak surat permohonan, dan menerbitkan faktur.
+    </p>
 </div>
 
 <section class="profile-hero">
@@ -18,7 +21,7 @@
         @endif
         <div class="profile-hero__copy">
             <h2 class="profile-hero__name">{{ $user->name }}</h2>
-            <p class="profile-hero__meta">{{ $user->email }} &middot; {{ $user->roleLabel() }}</p>
+            <p class="profile-hero__meta">{{ $user->email }} &middot; {{ $user->roleDisplayLabel() }}</p>
         </div>
     </div>
     <a class="btn btn--secondary" href="{{ route('profile.edit') }}">
@@ -31,36 +34,51 @@
     <section class="surface profile-section">
         <div class="flex items-center justify-between gap-3">
             <div>
-                <span class="section-kicker">Informasi akun</span>
-                <h2 class="surface__title">Data pribadi</h2>
+                <span class="section-kicker">Data pendaftaran</span>
+                <h2 class="surface__title">Identitas pemohon</h2>
             </div>
             <x-customer.icon name="user" :size="19" class="text-[var(--forest-700)]"></x-customer.icon>
         </div>
+
         <div class="profile-list mt-4">
-            <div class="profile-row">
-                <span class="profile-row__label">Nama lengkap</span>
-                <span class="profile-row__value">{{ $user->name }}</span>
+            @foreach ([
+                'Nama lengkap' => $user->name,
+                'Email' => $user->email,
+                'Nomor KTP' => $user->nik,
+                'Instansi / Kelompok tani' => $user->instansi,
+                'Nomor HP' => $user->phone,
+                'Nomor WhatsApp' => $user->whatsapp,
+            ] as $label => $value)
+                <div class="profile-row">
+                    <span class="profile-row__label">{{ $label }}</span>
+                    <span class="profile-row__value">{{ $value ?: 'Belum diisi' }}</span>
+                </div>
+            @endforeach
+        </div>
+    </section>
+
+    <section class="surface profile-section">
+        <div class="flex items-center justify-between gap-3">
+            <div>
+                <span class="section-kicker">Data pendaftaran</span>
+                <h2 class="surface__title">Alamat</h2>
             </div>
-            <div class="profile-row">
-                <span class="profile-row__label">Email</span>
-                <span class="profile-row__value">{{ $user->email }}</span>
-            </div>
-            <div class="profile-row">
-                <span class="profile-row__label">Nomor telepon</span>
-                <span class="profile-row__value">{{ $user->phone ?: 'Belum diisi' }}</span>
-            </div>
-            <div class="profile-row">
-                <span class="profile-row__label">NIK</span>
-                <span class="profile-row__value">{{ $user->nik ?: 'Belum diisi' }}</span>
-            </div>
-            <div class="profile-row">
-                <span class="profile-row__label">Domisili</span>
-                <span class="profile-row__value">{{ $user->domisili ?: 'Belum diisi' }}</span>
-            </div>
-            <div class="profile-row">
-                <span class="profile-row__label">Alamat</span>
-                <span class="profile-row__value">{{ $user->alamat ?: 'Belum diisi' }}</span>
-            </div>
+            <x-customer.icon name="map-pin" :size="19" class="text-[var(--forest-700)]"></x-customer.icon>
+        </div>
+
+        <div class="profile-list mt-4">
+            @foreach ([
+                'Alamat' => $user->alamat,
+                'Kelurahan/Desa' => $user->kelurahan,
+                'Kecamatan' => $user->kecamatan,
+                'Kabupaten/Kota' => $user->kabupaten_kota,
+                'Provinsi' => $user->provinsi,
+            ] as $label => $value)
+                <div class="profile-row">
+                    <span class="profile-row__label">{{ $label }}</span>
+                    <span class="profile-row__value">{{ $value ?: 'Belum diisi' }}</span>
+                </div>
+            @endforeach
         </div>
     </section>
 

@@ -9,15 +9,19 @@
         @auth
             @if (auth()->user()->isKonsumen())
                 <h1 class="hero__title">Selamat datang,<br>{{ auth()->user()->name }}.</h1>
-                <p class="hero__description">Temukan benih dan bibit yang Anda butuhkan, lalu pantau perjalanan pesanan Anda dalam satu tempat.</p>
             @else
-                <h1 class="hero__title">Katalog yang membantu<br>pertanian tumbuh.</h1>
-                <p class="hero__description">Informasi produk, kemasan, dan ketersediaan benih serta bibit dalam satu katalog yang mudah dijelajahi.</p>
+                <h1 class="hero__title">{{ $landing->hero_title }}</h1>
             @endif
         @else
-            <h1 class="hero__title">Benih pilihan untuk<br>langkah tumbuh berikutnya.</h1>
-            <p class="hero__description">Jelajahi katalog benih dan bibit, pilih yang sesuai, lalu ajukan pesanan dengan proses yang jelas dan mudah dilacak.</p>
+            <h1 class="hero__title">{{ $landing->hero_title }}</h1>
         @endauth
+        <p class="hero__description">{{ $landing->hero_subtitle }}</p>
+        @if ($landing->announcement)
+            <div class="hero__note">
+                <x-customer.icon name="info" :size="15"></x-customer.icon>
+                <span>{{ $landing->announcement }}</span>
+            </div>
+        @endif
         <div class="hero__actions">
             <a class="btn btn--gold" href="#daftar-produk">
                 Jelajahi produk
@@ -71,7 +75,11 @@
     </div>
 </section>
 
-<section id="daftar-produk">
+{{--
+  Filter kategori/varietas memakai tautan biasa, namun POSIX scroll restoration
+  menjaga posisi gulir sehingga halaman tidak kembali ke paling atas.
+--}}
+<section id="daftar-produk" class="catalog-anchor">
     <div class="catalog-toolbar">
         <div class="catalog-toolbar__heading">
             <span class="section-kicker">Pilihan untuk Anda</span>
@@ -81,43 +89,68 @@
         <div class="catalog-toolbar__meta">{{ $products->total() }} produk ditemukan</div>
     </div>
 
-    <div class="filter-list" aria-label="Filter kategori">
-        <a class="filter-link {{ !request('category') ? 'filter-link--active' : '' }}" href="{{ route('catalog.index', request()->except('category', 'page')) }}">
+    <nav class="filter-list" aria-label="Filter kategori">
+        <a class="filter-link {{ ! $selectedCategory ? 'filter-link--active' : '' }}"
+           href="{{ route('catalog.index', array_merge(request()->except(['category', 'variety', 'page']), [])) }}">
             Semua produk
         </a>
         @foreach ($categories as $category)
-            <a class="filter-link {{ request('category') === $category->slug ? 'filter-link--active' : '' }}" href="{{ route('catalog.index', array_merge(request()->except('category', 'page'), ['category' => $category->slug])) }}">
+            <a class="filter-link {{ $selectedCategory === $category->slug ? 'filter-link--active' : '' }}"
+               href="{{ route('catalog.index', array_merge(request()->except(['variety', 'page']), ['category' => $category->slug])) }}">
                 {{ $category->name }}
             </a>
         @endforeach
-    </div>
+    </nav>
 
-    @if (request('q'))
+    @php
+        $activeCategory = $selectedCategory
+            ? $categories->firstWhere('slug', $selectedCategory)
+            : null;
+    @endphp
+
+    @if ($activeCategory && $activeCategory->children->isNotEmpty())
+        <nav class="filter-list filter-list--sub" aria-label="Filter varietas">
+            <a class="filter-link {{ ! $selectedVariety ? 'filter-link--active' : '' }}"
+               href="{{ route('catalog.index', array_merge(request()->except(['variety', 'page']), ['category' => $selectedCategory])) }}">
+                Semua {{ $activeCategory->name }}
+            </a>
+            @foreach ($activeCategory->children as $child)
+                <a class="filter-link {{ $selectedVariety === $child->slug ? 'filter-link--active' : '' }}"
+                   href="{{ route('catalog.index', array_merge(request()->except('page'), ['category' => $selectedCategory, 'variety' => $child->slug])) }}">
+                    {{ $child->name }}
+                </a>
+            @endforeach
+        </nav>
+    @endif
+
+    @if ($keyword)
         <div class="flash flash--success mb-5" role="status">
             <span class="flash__icon"><x-customer.icon name="search" :size="17"></x-customer.icon></span>
-            <div>Menampilkan hasil untuk <strong>“{{ request('q') }}”</strong>.</div>
+            <div>Menampilkan hasil untuk <strong>“{{ $keyword }}”</strong>.</div>
         </div>
     @endif
 
-    @if ($products->isEmpty())
-        <x-customer.empty-state
-            eyebrow="Belum ada yang cocok"
-            title="Produk belum ditemukan"
-            description="Coba kata kunci lain atau jelajahi semua kategori untuk menemukan produk yang Anda cari."
-            action-label="Lihat semua produk"
-            :action-url="route('catalog.index')"
-            icon="search"
-        ></x-customer.empty-state>
-    @else
-        <div class="product-grid">
-            @foreach ($products as $product)
-                <x-customer.product-card :product="$product"></x-customer.product-card>
-            @endforeach
-        </div>
-        <div class="mt-6">
-            {{ $products->links() }}
-        </div>
-    @endif
+    <div id="catalog-results">
+        @if ($products->isEmpty())
+            <x-customer.empty-state
+                eyebrow="Belum ada yang cocok"
+                title="Produk belum ditemukan"
+                description="Coba kata kunci lain atau jelajahi semua kategori untuk menemukan produk yang Anda cari."
+                action-label="Lihat semua produk"
+                :action-url="route('catalog.index')"
+                icon="search"
+            ></x-customer.empty-state>
+        @else
+            <div class="product-grid">
+                @foreach ($products as $product)
+                    <x-customer.product-card :product="$product"></x-customer.product-card>
+                @endforeach
+            </div>
+            <div class="mt-6">
+                {{ $products->links() }}
+            </div>
+        @endif
+    </div>
 </section>
 
 <div class="section-divider">
@@ -128,7 +161,7 @@
         </div>
         <div class="order-step">
             <span class="order-step__number">2</span>
-            <span class="order-step__label">Buat pesanan</span>
+            <span class="order-step__label">Isi rencana pengambilan</span>
         </div>
         <div class="order-step">
             <span class="order-step__number">3</span>
@@ -136,4 +169,96 @@
         </div>
     </div>
 </div>
+
+<script>
+    // Memilih kategori/varietas adalah navigasi halaman penuh. Tanpa penanganan
+    // tambahan, browser mengembalikan posisi gulir ke paling atas sehingga
+    // pengguna kehilangan tempat ia berada di daftar produk.
+    //
+    // Posisi gulir disimpan sebelum keluar dan dipulihkan setelah halaman siap.
+    (function () {
+        var STORAGE_KEY = 'catalogScrollY';
+        var anchor = document.getElementById('daftar-produk');
+
+        function readPosition() {
+            try {
+                var raw = window.sessionStorage.getItem(STORAGE_KEY);
+                return raw ? parseInt(raw, 10) : null;
+            } catch (e) {
+                return null;
+            }
+        }
+
+        function savePosition() {
+            try {
+                window.sessionStorage.setItem(STORAGE_KEY, String(window.scrollY));
+            } catch (e) {
+                // abaikan bila penyimpanan tidak tersedia
+            }
+        }
+
+        function clearPosition() {
+            try {
+                window.sessionStorage.removeItem(STORAGE_KEY);
+            } catch (e) {
+                // abaikan bila penyimpanan tidak tersedia
+            }
+        }
+
+        // Simpan posisi sebelum meninggalkan halaman.
+        window.addEventListener('pagehide', savePosition);
+        window.addEventListener('beforeunload', savePosition);
+
+        var savedY = readPosition();
+
+        if (savedY !== null) {
+            // Pemulihan gulir dimatikan otomatis karena kita yang menanganinya.
+            if ('scrollRestoration' in window.history) {
+                window.history.scrollRestoration = 'manual';
+            }
+
+            var restore = function () {
+                window.scrollTo(0, savedY);
+
+                if (anchor) {
+                    var offset = anchor.getBoundingClientRect().top + window.scrollY - 90;
+                    // Bila daftar produk became lebih pendek, jaga agar tidak keluar jalur.
+                    window.scrollTo(0, Math.min(savedY, Math.max(0, offset + savedY)));
+                }
+
+                clearPosition();
+            };
+
+            window.requestAnimationFrame(function () {
+                window.requestAnimationFrame(restore);
+            });
+
+            window.addEventListener('load', restore);
+        }
+
+        // Navigasi ke luar katalog tidak perlu memulihkan posisi.
+        document.querySelectorAll('a[href]').forEach(function (link) {
+            link.addEventListener('click', function (event) {
+                if (link.closest('.filter-list') || link.closest('.pagination')) {
+                    return;
+                }
+
+                var url = link.getAttribute('href') || '';
+
+                if (link.hostname && link.hostname !== window.location.hostname) {
+                    clearPosition();
+                    return;
+                }
+
+                if (url.indexOf('/katalog') !== 0) {
+                    clearPosition();
+                }
+
+                if (link.classList.contains('filter-link') || event.metaKey || event.ctrlKey) {
+                    return;
+                }
+            });
+        });
+    })();
+</script>
 @endsection

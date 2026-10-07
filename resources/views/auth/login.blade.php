@@ -55,9 +55,8 @@
             <div class="credential-note">
                 <strong>Akun demo lokal:</strong><br>
                 Konsumen: konsumen@benih.test / password<br>
-                Petugas: layanan@benih.test / password<br>
-                PNBP: pnbp@benih.test / password<br>
-                Gudang: gudang@benih.test / password
+                Petugas Layanan: layanan@benih.test / password<br>
+                Petugas Gudang: gudang@benih.test / password
             </div>
         @endif
     </section>

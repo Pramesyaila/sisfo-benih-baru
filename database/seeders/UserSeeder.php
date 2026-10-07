@@ -8,38 +8,75 @@ use Illuminate\Support\Facades\Hash;
 
 class UserSeeder extends Seeder
 {
+    /**
+     * Kredensial akun bawaan sistem.
+     *
+     * @var array<string, string>
+     */
+    public const SUPER_ADMIN = [
+        'name' => 'Super Admin',
+        'email' => 'superadmin@benih.test',
+        'password' => 'superadmin123',
+    ];
+
     public function run(): void
     {
-        // Akun contoh untuk tiap sisi/role. Password bisa diganti setelah login pertama.
-        User::create([
-            'name' => 'Petugas Layanan',
-            'email' => 'layanan@benih.test',
-            'password' => Hash::make('password'),
-            'role' => 'petugas_layanan',
-        ]);
+        // Akun Super Admin bawaan sistem: satu-satunya akun yang dapat
+        // mengelola fitur Kelola Admin.
+        User::updateOrCreate(
+            ['email' => self::SUPER_ADMIN['email']],
+            [
+                'name' => self::SUPER_ADMIN['name'],
+                'password' => Hash::make(self::SUPER_ADMIN['password']),
+                'role' => User::ROLE_PETUGAS_LAYANAN,
+                'is_super_admin' => true,
+                'is_active' => true,
+            ]
+        );
 
-        User::create([
-            'name' => 'Petugas Pengelola PNBP',
-            'email' => 'pnbp@benih.test',
-            'password' => Hash::make('password'),
-            'role' => 'petugas_pnbp',
-        ]);
+        // Pastikan hanya ada satu akun Super Admin.
+        User::where('is_super_admin', true)
+            ->where('email', '!=', self::SUPER_ADMIN['email'])
+            ->update(['is_super_admin' => false]);
 
-        User::create([
-            'name' => 'Manager / Petugas Gudang',
-            'email' => 'gudang@benih.test',
-            'password' => Hash::make('password'),
-            'role' => 'manager_gudang',
-        ]);
+        User::updateOrCreate(
+            ['email' => 'layanan@benih.test'],
+            [
+                'name' => 'Petugas Layanan',
+                'password' => Hash::make('password'),
+                'role' => User::ROLE_PETUGAS_LAYANAN,
+                'is_active' => true,
+            ]
+        );
 
-        User::create([
-            'name' => 'Pramesyaila (Konsumen Contoh)',
-            'email' => 'konsumen@benih.test',
-            'password' => Hash::make('password'),
-            'role' => 'konsumen',
-            'phone' => '081234567890',
-            'domisili' => 'Bogor',
-            'alamat' => 'Jl. Contoh No. 1, Bogor',
-        ]);
+        User::updateOrCreate(
+            ['email' => 'gudang@benih.test'],
+            [
+                'name' => 'Petugas Gudang',
+                'password' => Hash::make('password'),
+                'role' => User::ROLE_PETUGAS_GUDANG,
+                'is_active' => true,
+            ]
+        );
+
+        User::updateOrCreate(
+            ['email' => 'konsumen@benih.test'],
+            [
+                'name' => 'Pramesyaila (Konsumen Contoh)',
+                'password' => Hash::make('password'),
+                'role' => User::ROLE_KONSUMEN,
+                'phone' => '081234567890',
+                'whatsapp' => '081234567890',
+                'nik' => '3201234567890001',
+                'instansi' => 'Kelompok Tani Sejahtera',
+                'alamat' => 'Jl. Contoh No. 1',
+                'kelurahan' => 'Sukamaju',
+                'kecamatan' => 'Bogor Timur',
+                'kabupaten_kota' => 'Kabupaten Bogor',
+                'provinsi' => 'Jawa Barat',
+                'domisili' => 'Kabupaten Bogor',
+                'is_active' => true,
+            ]
+        );
     }
 }

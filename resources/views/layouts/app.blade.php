@@ -26,17 +26,52 @@
 </head>
 <body class="customer-body">
 @php
+    // Angka pada notifikasi keranjang menghitung jumlah produk (id pesanan item),
+    // bukan jumlah unit. Satu produk dengan qty 5 tetap dihitung satu.
     $cartCount = auth()->check() && auth()->user()->isKonsumen()
-        ? collect(session('cart', []))->sum()
+        ? collect(session('cart', []))->count()
         : 0;
+
+    // Notifikasi digabung per order: satu pesanan = satu entri, berapa pun
+    // jumlah produk atau pembaruan notifikasi yang terkait.
+    $notificationGroups = collect();
+    $unreadCount = 0;
+
+    if (auth()->check() && auth()->user()->isKonsumen()) {
+        $notificationGroups = auth()->user()->unreadNotifications()
+            ->latest()
+            ->limit(50)
+            ->get()
+            ->groupBy(fn ($notification) => $notification->data['order_id'] ?? $notification->id)
+            ->map(function ($notifications) {
+                $latest = $notifications->first();
+
+                return [
+                    'latest' => $latest,
+                    'count' => $notifications->count(),
+                ];
+            })
+            ->sortByDesc(fn ($group) => $group['latest']->created_at)
+            ->take(5)
+            ->values();
+
+        $unreadCount = $notificationGroups->sum('count');
+    }
 @endphp
 
 <div class="customer-shell">
     <header class="site-header">
         <div class="customer-container">
             <div class="header-main">
+                @php $landingLogo = \App\Models\LandingContent::current()->logoUrl(); @endphp
                 <a href="{{ route('catalog.index') }}" class="brand" aria-label="Beranda katalog benih dan bibit">
-                    <span class="brand-mark"><x-customer.icon name="sprout" :size="23"></x-customer.icon></span>
+                    <span class="brand-mark">
+                        @if ($landingLogo)
+                            <img src="{{ $landingLogo }}" alt="Logo instansi" class="brand-logo">
+                        @else
+                            <x-customer.icon name="sprout" :size="23"></x-customer.icon>
+                        @endif
+                    </span>
                     <span class="brand-copy">
                         <span class="brand-kicker">KATALOG RESMI</span>
                         <span class="brand-name">Benih &amp; Bibit</span>
@@ -51,28 +86,54 @@
 
                 @auth
                     @if (auth()->user()->isKonsumen())
+                        {{-- Urutan: Katalog, Pesanan, Keranjang, lalu Profil. --}}
                         <nav class="desktop-nav" aria-label="Navigasi pelanggan">
                             <a class="nav-link {{ request()->routeIs('catalog.*') ? 'nav-link--active' : '' }}" href="{{ route('catalog.index') }}">
-                                <span class="nav-icon"><x-customer.icon name="leaf" :size="16"></x-customer.icon></span>
+                                <span class="nav-icon"><x-customer.icon name="leaf" :size="18"></x-customer.icon></span>
                                 Katalog
                             </a>
                             <a class="nav-link {{ request()->routeIs('orders.*') ? 'nav-link--active' : '' }}" href="{{ route('orders.index') }}">
-                                <span class="nav-icon"><x-customer.icon name="clipboard" :size="16"></x-customer.icon></span>
+                                <span class="nav-icon"><x-customer.icon name="clipboard" :size="18"></x-customer.icon></span>
                                 Pesanan
                             </a>
-                            <a class="nav-link {{ request()->routeIs('profile.*') ? 'nav-link--active' : '' }}" href="{{ route('profile.show') }}">
-                                <span class="nav-icon"><x-customer.icon name="user" :size="16"></x-customer.icon></span>
-                                Profil
-                            </a>
                             <a class="nav-link cart-link {{ request()->routeIs('cart.*', 'checkout.*') ? 'nav-link--active' : '' }}" href="{{ route('cart.index') }}">
-                                <span class="nav-icon"><x-customer.icon name="bag" :size="16"></x-customer.icon></span>
+                                <span class="nav-icon"><x-customer.icon name="bag" :size="18"></x-customer.icon></span>
                                 Keranjang
                                 @if ($cartCount > 0)
                                     <span class="cart-count">{{ $cartCount }}</span>
                                 @endif
                             </a>
+                            <a class="nav-link {{ request()->routeIs('profile.*') ? 'nav-link--active' : '' }}" href="{{ route('profile.show') }}">
+                                <span class="nav-icon"><x-customer.icon name="user" :size="18"></x-customer.icon></span>
+                                Profil
+                            </a>
                         </nav>
                         <div class="header-actions">
+                            <details class="notification-menu">
+                                <summary class="notification-bell" aria-label="Notifikasi">
+                                    <x-customer.icon name="bell" :size="18"></x-customer.icon>
+                                    @if ($notificationGroups->isNotEmpty())
+                                        <span class="notification-dot">{{ $notificationGroups->count() }}</span>
+                                    @endif
+                                </summary>
+                                <div class="notification-panel">
+                                    <p class="notification-panel__title">Notifikasi</p>
+                                    @forelse ($notificationGroups as $group)
+                                        <form action="{{ route('notifications.read', $group['latest']->id) }}" method="POST">
+                                            @csrf @method('PATCH')
+                                            <button type="submit" class="notification-item">
+                                                <strong>{{ $group['latest']->data['title'] ?? 'Notifikasi' }}</strong>
+                                                <span>{{ $group['latest']->data['message'] ?? '' }}</span>
+                                            </button>
+                                        </form>
+                                    @empty
+                                        <p class="notification-panel__empty">Belum ada notifikasi baru.</p>
+                                    @endforelse
+                                    @if ($notificationGroups->isNotEmpty())
+                                        <a class="notification-panel__more" href="{{ route('notifications.index') }}">Lihat semua notifikasi</a>
+                                    @endif
+                                </div>
+                            </details>
                             <span class="header-user">Hai, {{ auth()->user()->name }}</span>
                             <form action="{{ route('logout') }}" method="POST">
                                 @csrf
@@ -163,6 +224,24 @@
                 </nav>
                 @auth
                     <div class="mobile-menu__meta">
+                        @if (auth()->user()->isKonsumen() && $notificationGroups->isNotEmpty())
+                            <div class="mb-3">
+                                <p class="text-[11px] font-semibold uppercase tracking-wide text-[var(--muted)]">Notifikasi</p>
+                                @foreach ($notificationGroups as $group)
+                                    <form action="{{ route('notifications.read', $group['latest']->id) }}" method="POST">
+                                        @csrf @method('PATCH')
+                                        <button type="submit" class="mobile-menu__link w-full text-left">
+                                            <x-customer.icon name="bell" :size="17"></x-customer.icon>
+                                            {{ $group['latest']->data['title'] ?? 'Notifikasi' }}
+                                        </button>
+                                    </form>
+                                @endforeach
+                                <a class="mobile-menu__link" href="{{ route('notifications.index') }}">
+                                    <x-customer.icon name="bell" :size="17"></x-customer.icon>
+                                    Lihat semua notifikasi
+                                </a>
+                            </div>
+                        @endif
                         <span>{{ auth()->user()->name }}</span>
                         <form action="{{ route('logout') }}" method="POST">
                             @csrf
@@ -176,31 +255,28 @@
 
     <main class="page-main">
         <div class="customer-container">
-            @if (session('success'))
-                <div class="flash flash--success" role="status">
-                    <span class="flash__icon"><x-customer.icon name="check" :size="17"></x-customer.icon></span>
-                    <div>{{ session('success') }}</div>
-                </div>
-            @endif
-            @if (session('error'))
-                <div class="flash flash--error" role="alert">
-                    <span class="flash__icon"><x-customer.icon name="info" :size="17"></x-customer.icon></span>
-                    <div>{{ session('error') }}</div>
-                </div>
-            @endif
-            @if ($errors->any())
-                <div class="flash flash--validation" role="alert">
-                    <span class="flash__icon"><x-customer.icon name="info" :size="17"></x-customer.icon></span>
-                    <div>
-                        <strong>Periksa kembali data berikut:</strong>
-                        <ul>
-                            @foreach ($errors->all() as $error)
-                                <li>{{ $error }}</li>
-                            @endforeach
-                        </ul>
-                    </div>
-                </div>
-            @endif
+            {{-- Alert konsisten untuk sisi konsumen. --}}
+            <div class="space-y-3 mb-4 empty:mb-0">
+                @if (session('success'))
+                    <x-customer.alert type="success" :message="session('success')"></x-customer.alert>
+                @endif
+
+                @if (session('error'))
+                    <x-customer.alert type="error" :message="session('error')"></x-customer.alert>
+                @endif
+
+                @if (session('warning'))
+                    <x-customer.alert type="warning" :message="session('warning')"></x-customer.alert>
+                @endif
+
+                @if ($errors->any())
+                    <x-customer.alert
+                        type="error"
+                        title="Periksa kembali data berikut"
+                        :errors="$errors->all()"
+                    ></x-customer.alert>
+                @endif
+            </div>
 
             @yield('content')
         </div>

@@ -1,10 +1,19 @@
 <div>
-    <label class="block text-sm font-medium mb-1">Kategori</label>
+    <label class="block text-sm font-medium mb-1">Kategori / Varietas</label>
     <select name="category_id" required class="w-full rounded-md border-gray-300 focus:border-primary focus:ring-primary px-3 py-2 border text-sm">
         @foreach($categories as $cat)
-            <option value="{{ $cat->id }}" @selected(old('category_id', $product->category_id ?? null) == $cat->id)>{{ $cat->name }}</option>
+            <optgroup label="{{ $cat->name }}">
+                @if ($cat->children->isEmpty())
+                    <option value="{{ $cat->id }}" @selected(old('category_id', $product->category_id ?? null) == $cat->id)>{{ $cat->name }} (tanpa varietas)</option>
+                @else
+                    @foreach ($cat->children as $child)
+                        <option value="{{ $child->id }}" @selected(old('category_id', $product->category_id ?? null) == $child->id)>{{ $cat->name }} &rsaquo; {{ $child->name }}</option>
+                    @endforeach
+                @endif
+            </optgroup>
         @endforeach
     </select>
+    <p class="text-xs text-gray-400 mt-1">Pilih kategori anak (varietas) agar konsumen dapat memfilternya.</p>
 </div>
 <div>
     <label class="block text-sm font-medium mb-1">Nama Produk</label>

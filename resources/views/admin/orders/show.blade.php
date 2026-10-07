@@ -9,7 +9,7 @@
         <p class="text-sm text-gray-500">{{ $order->user->name }} &middot; {{ $order->created_at->format('d M Y H:i') }}</p>
     </div>
     <div class="flex items-center gap-3">
-        <a href="{{ route('admin.orders.print.permohonan', $order) }}" target="_blank" class="text-sm bg-white border border-gray-200 px-3 py-1.5 rounded-md hover:border-primary">🖨️ Cetak Surat Permohonan</a>
+        <a href="{{ route('admin.orders.print.permohonan', $order) }}" target="_blank" class="text-sm bg-white border border-gray-200 px-3 py-1.5 rounded-md hover:border-primary">🖨️ Preview Surat Permohonan</a>
         <span class="badge {{ $order->statusBadgeColor() }}">{{ \App\Models\Order::statusLabel($order->status) }}</span>
     </div>
 </div>
@@ -23,7 +23,7 @@
                         <p class="font-semibold">{{ $item->product_name }}</p>
                         <p class="text-xs text-gray-500">{{ $item->qty }} {{ $item->packaging }} &times; {{ $item->formattedPrice() }}
                             @if($item->product)
-                                <span class="ml-2 {{ $item->product->isLowStock() ? 'text-accent' : 'text-gray-400' }}">(stok tersedia: {{ $item->product->stock }})</span>
+                                <span class="ml-2 text-gray-400">(stok tersedia: {{ $item->product->stock }})</span>
                             @endif
                         </p>
                     </div>
@@ -35,10 +35,43 @@
             </div>
         </div>
 
-        @if($order->notes)
-            <div class="bg-white rounded-xl shadow-sm border border-gray-100 p-4">
-                <p class="text-sm text-gray-500 mb-1">Catatan konsumen</p>
-                <p class="text-sm">{{ $order->notes }}</p>
+        <div class="bg-white rounded-xl shadow-sm border border-gray-100 p-4">
+            <p class="text-sm text-gray-500 mb-1">Tujuan penggunaan</p>
+            <p class="text-sm">{{ $order->notes ?: '-' }}</p>
+            <p class="text-xs text-gray-500 mt-3">Rencana pengambilan: {{ optional($order->pickup_date)->format('d M Y') ?: '-' }} &middot; {{ $order->pickupLocationLabel() }}</p>
+        </div>
+
+        @if($order->billing)
+            <div class="bg-white rounded-xl shadow-sm border border-gray-100 p-5">
+                <div class="flex items-start justify-between gap-3">
+                    <div>
+                        <h3 class="font-semibold">Billing {{ $order->billing->bill_number }}</h3>
+                        <p class="text-xs text-gray-500 mt-1">Dikirim {{ optional($order->billing->sent_at)->format('d M Y H:i') }}</p>
+                    </div>
+                    <a href="{{ asset('storage/' . $order->billing->file_path) }}" target="_blank" class="text-sm text-primary-dark font-semibold hover:underline">Lihat billing →</a>
+                </div>
+                @if($order->billing->notes)
+                    <p class="text-xs text-gray-600 mt-3">{{ $order->billing->notes }}</p>
+                @endif
+            </div>
+        @endif
+
+        @if($order->invoice)
+            <div class="bg-white rounded-xl shadow-sm border border-gray-100 p-5">
+                <div class="flex items-start justify-between gap-3">
+                    <div>
+                        <h3 class="font-semibold">Faktur {{ $order->invoice->invoice_number }}</h3>
+                        <p class="text-xs text-gray-500 mt-1">
+                            {{ $order->invoice->formattedTotal() }}
+                            &middot; diterbitkan {{ $order->invoice->created_at->format('d M Y H:i') }}
+                        </p>
+                        <p class="text-xs text-gray-500">
+                            Pengambilan {{ optional($order->invoice->pickup_date)->format('d M Y') ?: '-' }}
+                            di {{ $order->invoice->pickupLocationLabel() }}
+                        </p>
+                    </div>
+                    <a href="{{ route('admin.orders.invoice.show', $order) }}" target="_blank" class="text-sm text-primary-dark font-semibold hover:underline">Preview / cetak faktur →</a>
+                </div>
             </div>
         @endif
 
@@ -53,39 +86,20 @@
                         </li>
                     @endforeach
                 </ul>
-                @if(auth()->user()->role === 'petugas_layanan')
-                    <p class="text-xs text-gray-400 mt-2">Verifikasi bukti pembayaran melalui menu "Verifikasi Pembayaran".</p>
-                @endif
             </div>
         @endif
 
-        @if($order->contract)
-             <div class="bg-white rounded-xl shadow-sm border border-gray-100 p-5">
-                <h3 class="font-semibold mb-2">Kontrak {{ $order->contract->contract_number }}</h3>
-                <pre class="whitespace-pre-wrap text-xs bg-base p-3 rounded-md border">{{ $order->contract->content }}</pre>
-                <a href="{{ route('admin.orders.print.kontrak', $order) }}" target="_blank" class="inline-block mt-2 text-primary-dark text-sm font-semibold hover:underline">🖨️ Cetak Surat Perjanjian</a>    </div>
-             </div>
-        @endif
-
-        @if($order->pnbpBill)
-    <div class="bg-white rounded-xl shadow-sm border border-gray-100 p-5">
-        <h3 class="font-semibold mb-2">Tagihan PNBP {{ $order->pnbpBill->bill_number }}</h3>
-        <pre class="whitespace-pre-wrap text-xs bg-base p-3 rounded-md border">{{ $order->pnbpBill->content }}</pre>
-        <button onclick="window.print()" class="mt-2 text-primary-dark text-sm font-semibold hover:underline">🖨️ Cetak Tagihan</button>
-    </div>
-@endif
-
-        @if($order->invoice)
+        @if($order->completionReceipt)
             <div class="bg-white rounded-xl shadow-sm border border-gray-100 p-5">
-                <h3 class="font-semibold mb-2">Faktur Penjualan {{ $order->invoice->invoice_number }}</h3>
-                <p class="text-sm text-gray-600">Total: {{ $order->invoice->formattedTotal() }}</p>
-                <button onclick="window.print()" class="mt-2 text-primary-dark text-sm font-semibold hover:underline">🖨️ Cetak Faktur</button>
+                <h3 class="font-semibold mb-2">Bukti Penyelesaian</h3>
+                <p class="text-xs text-gray-500 mb-3">{{ $order->completionReceipt->receipt_number }} &middot; {{ optional($order->completionReceipt->completed_at)->format('d M Y H:i') }}</p>
+                <a href="{{ asset('storage/' . $order->completionReceipt->file_path) }}" target="_blank" class="text-sm text-primary-dark font-semibold hover:underline">Lihat faktur selesai →</a>
             </div>
         @endif
     </div>
 
     <div class="space-y-4">
-        @if(auth()->user()->role === 'petugas_layanan')
+        @if(auth()->user()->isPetugasLayanan())
             <div class="bg-white rounded-xl shadow-sm border border-gray-100 p-5 space-y-3">
                 <h3 class="font-semibold">Aksi Petugas Layanan</h3>
 
@@ -94,72 +108,117 @@
                         @csrf
                         <button class="w-full bg-primary text-white py-2 rounded-md text-sm hover:bg-primary-dark">Proses Pesanan (Cek Stok)</button>
                     </form>
+                    <p class="text-xs text-gray-400">Preview surat permohonan tersedia di atas sebelum diproses.</p>
                 @endif
 
-                @if($order->status === 'diproses' && !$order->contract)
-                <form action="{{ route('admin.orders.contract', $order) }}" method="POST">
-                    @csrf
-                    <button class="w-full bg-primary text-white py-2 rounded-md text-sm hover:bg-primary-dark">Buat Surat Perjanjian (Otomatis)</button>
-                </form>
-                <p class="text-xs text-gray-400">Data NIK, domisili, dan alamat diambil otomatis dari data konsumen saat checkout.</p>
-                 @endif
-    
-
-                
-
-                @if($order->status === 'siap_diambil')
-                    <form action="{{ route('admin.orders.markTaken', $order) }}" method="POST">
-                        @csrf
-                        <button class="w-full bg-primary-dark text-white py-2 rounded-md text-sm hover:brightness-95">Tandai Sudah Diambil</button>
-                    </form>
+                @if($order->status === 'diproses' && !$order->billing)
+                    <button type="button" class="w-full bg-accent text-primary-dark py-2 rounded-md text-sm font-semibold hover:brightness-95" data-modal-open="billing-modal">Upload &amp; Kirim Billing</button>
+                    <p class="text-xs text-gray-400">Billing dikirim kepada konsumen dan pesanan menunggu pembayaran.</p>
                 @endif
 
-                @if(!in_array($order->status, ['selesai','dibatalkan']))
-                    <form action="{{ route('admin.orders.cancel', $order) }}" method="POST" onsubmit="return confirm('Batalkan pesanan ini?')">
-                        @csrf
-                        <button class="w-full bg-white border border-red-300 text-red-600 py-2 rounded-md text-sm hover:bg-red-50">Batalkan Pesanan</button>
-                    </form>
+                @if(in_array($order->status, ['siap_diambil', 'selesai'], true) && !$order->invoice)
+                    @include('partials.confirm-form', [
+                        'action' => route('admin.orders.invoice.store', $order),
+                        'label' => 'Terbitkan Faktur',
+                        'title' => 'Terbitkan faktur',
+                        'message' => 'Terbitkan faktur untuk pesanan ' . $order->order_number . '? Faktur akan langsung dikirim kepada konsumen.',
+                        'confirmLabel' => 'Ya, Terbitkan',
+                        'tone' => 'primary',
+                        'class' => 'block',
+                        'buttonClass' => 'w-full bg-primary text-white py-2 rounded-md text-sm hover:bg-primary-dark',
+                    ])
+                    <p class="text-xs text-gray-400">Faktur dibuat otomatis dari data pesanan dan langsung dikirim ke konsumen.</p>
+                @endif
+
+                @if($order->invoice)
+                    <a href="{{ route('admin.orders.invoice.show', $order) }}" target="_blank" class="block w-full bg-base border border-gray-200 py-2 rounded-md text-sm hover:border-primary text-center">Lihat Faktur {{ $order->invoice->invoice_number }}</a>
+                @endif
+
+                @if($order->canBeCancelled())
+                    @include('partials.confirm-form', [
+                        'action' => route('admin.orders.cancel', $order),
+                        'label' => 'Batalkan Pesanan',
+                        'title' => 'Batalkan pesanan',
+                        'message' => 'Batalkan pesanan ' . $order->order_number . '?',
+                        'confirmLabel' => 'Ya, Batalkan',
+                        'class' => 'block',
+                        'buttonClass' => 'w-full bg-white border border-red-300 text-red-600 py-2 rounded-md text-sm hover:bg-red-50',
+                    ])
                 @endif
             </div>
         @endif
 
-      @if(auth()->user()->role === 'petugas_pnbp')
-    <div class="bg-white rounded-xl shadow-sm border border-gray-100 p-5 space-y-3">
-        <h3 class="font-semibold">Aksi Petugas PNBP</h3>
-
-        @if($order->contract && !$order->pnbpBill && $order->status === 'diproses')
-            <details class="border rounded-md p-3">
-                <summary class="text-sm font-medium cursor-pointer">Buat Tagihan PNBP</summary>
-                <div class="mt-3 mb-2 text-xs text-gray-500 space-y-1">
-                    @foreach($order->items as $item)
-                        <div>{{ $item->product_name }} ({{ $item->packaging }}) x {{ $item->qty }} = {{ $item->formattedSubtotal() }}</div>
-                    @endforeach
-                    <div class="font-semibold text-primary-dark pt-1 border-t">Total: {{ $order->formattedTotal() }}</div>
-                </div>
-                <form action="{{ route('admin.pnbp.store', $order) }}" method="POST" class="space-y-2">
+        @if(auth()->user()->isPetugasGudang() && $order->status === 'siap_diambil' && !$order->completionReceipt)
+    @if (! $order->hasReleasedStock())
+        <div class="bg-accent-light border border-accent text-primary-dark rounded-xl p-5">
+            <h3 class="font-semibold mb-1">Belum tercatat keluar</h3>
+            <p class="text-xs leading-relaxed">Catat serah terima benih terlebih dahulu di halaman Pengambilan Benih agar stok berkurang sebelum faktur selesai diunggah.</p>
+        </div>
+    @endif
+            <div class="bg-white rounded-xl shadow-sm border border-gray-100 p-5 space-y-3">
+                <h3 class="font-semibold">Penyelesaian Pengambilan</h3>
+                <p class="text-xs text-gray-500">Upload faktur yang sudah selesai diambil untuk menutup pesanan.</p>
+                <form action="{{ route('admin.warehouse.complete', $order) }}" method="POST" enctype="multipart/form-data" class="space-y-2">
                     @csrf
-                    <label class="text-xs text-gray-500">Jatuh Tempo Pembayaran</label>
-                    <input type="date" name="due_date" value="{{ now()->addDays(7)->format('Y-m-d') }}" required class="w-full rounded-md border-gray-300 px-2 py-1.5 border text-sm">
-                    <label class="text-xs text-gray-500">Catatan (opsional)</label>
-                    <textarea name="notes" placeholder="Catatan tambahan..." class="w-full rounded-md border-gray-300 px-2 py-1.5 border text-sm"></textarea>
-                    <button class="w-full bg-accent text-primary-dark py-1.5 rounded-md text-sm font-semibold hover:brightness-95">Terbitkan Tagihan</button>
+                    <input type="file" name="receipt" accept=".pdf,.jpg,.jpeg,.png" required class="w-full text-xs">
+                    <button class="w-full bg-primary text-white py-2 rounded-md text-sm hover:bg-primary-dark">Upload Faktur Selesai</button>
                 </form>
-            </details>
-        @elseif(!$order->contract)
-            <p class="text-xs text-gray-400">Menunggu surat perjanjian dari Petugas Layanan.</p>
-        @elseif($order->pnbpBill)
-            <p class="text-xs text-gray-400">Tagihan sudah diterbitkan: {{ $order->pnbpBill->bill_number }}</p>
+            </div>
         @endif
-    </div>
-@endif
+
         <div class="bg-white rounded-xl shadow-sm border border-gray-100 p-5">
             <h3 class="font-semibold mb-3">Alur Status</h3>
             <ol class="relative border-l-2 border-accent-light pl-4 space-y-2 text-xs">
-                @foreach(['dipesan','diproses','menunggu_pembayaran','menunggu_verifikasi','lunas','faktur_terbit','siap_diambil','selesai'] as $step)
+                @foreach(['dipesan','diproses','menunggu_pembayaran','menunggu_verifikasi','siap_diambil','selesai'] as $step)
                     <li class="{{ $order->status === $step ? 'text-primary-dark font-bold' : 'text-gray-400' }}">{{ \App\Models\Order::statusLabel($step) }}</li>
                 @endforeach
             </ol>
         </div>
     </div>
 </div>
+
+@if(auth()->user()->isPetugasLayanan() && $order->status === 'diproses' && !$order->billing)
+<dialog id="billing-modal" class="rounded-xl p-0 w-full max-w-lg">
+    <form method="POST" action="{{ route('admin.orders.billing.store', $order) }}" enctype="multipart/form-data" class="p-6">
+        @csrf
+        <div class="flex items-start justify-between gap-3 mb-5">
+            <div>
+                <h3 class="text-lg font-bold text-primary-dark">Upload Billing</h3>
+                <p class="text-xs text-gray-500 mt-1">Pesanan {{ $order->order_number }} akan masuk ke status menunggu pembayaran.</p>
+            </div>
+            <button type="button" class="text-gray-400" data-modal-close="billing-modal">✕</button>
+        </div>
+        <div class="space-y-4">
+            <div>
+                <label class="block text-sm font-medium mb-1">File Billing</label>
+                <input type="file" name="file" accept=".pdf,.jpg,.jpeg,.png" required class="w-full text-sm">
+                <p class="text-xs text-gray-500 mt-1">PDF/JPG/PNG, maksimal 10 MB.</p>
+            </div>
+            <div>
+                <label class="block text-sm font-medium mb-1">Catatan (opsional)</label>
+                <textarea name="notes" rows="3" class="w-full rounded-md border-gray-300 px-3 py-2 border text-sm"></textarea>
+            </div>
+        </div>
+        <div class="flex justify-end gap-2 mt-6">
+            <button type="button" class="px-4 py-2 rounded-md border border-gray-300 text-sm" data-modal-close="billing-modal">Batal</button>
+            <button class="px-4 py-2 rounded-md bg-primary text-white text-sm font-semibold hover:bg-primary-dark">Kirim Billing</button>
+        </div>
+    </form>
+</dialog>
+@endif
+
+<script>
+    document.querySelectorAll('[data-modal-open]').forEach(function (button) {
+        button.addEventListener('click', function () {
+            var modal = document.getElementById(button.dataset.modalOpen);
+            if (modal && typeof modal.showModal === 'function') modal.showModal();
+        });
+    });
+    document.querySelectorAll('[data-modal-close]').forEach(function (button) {
+        button.addEventListener('click', function () {
+            var modal = document.getElementById(button.dataset.modalClose);
+            if (modal && typeof modal.close === 'function') modal.close();
+        });
+    });
+</script>
 @endsection

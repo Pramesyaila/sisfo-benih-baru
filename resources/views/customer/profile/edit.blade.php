@@ -27,6 +27,11 @@
                 </div>
             </div>
 
+            <p class="text-xs text-[var(--muted)] mt-1">
+                Isi dengan data yang sama seperti pada saat pendaftaran agar
+                surat permohonan dan faktur terisi otomatis.
+            </p>
+
             <div class="mt-5 grid gap-5 sm:grid-cols-2">
                 <div>
                     <label class="form-label" for="profile-name">Nama lengkap</label>
@@ -38,38 +43,63 @@
                 <div>
                     <label class="form-label" for="profile-email">Email</label>
                     <input id="profile-email" class="form-input" type="email" name="email" value="{{ old('email', $user->email) }}" required>
+                    <p class="form-hint">Email ini dipakai untuk menerima notifikasi pesanan.</p>
                     @error('email')
                         <p class="form-error">{{ $message }}</p>
                     @enderror
                 </div>
                 <div>
-                    <label class="form-label" for="profile-phone">Nomor telepon</label>
+                    <label class="form-label" for="profile-nik">Nomor KTP</label>
+                    <input id="profile-nik" class="form-input" type="text" name="nik" value="{{ old('nik', $user->nik) }}">
+                    @error('nik')
+                        <p class="form-error">{{ $message }}</p>
+                    @enderror
+                </div>
+                <div>
+                    <label class="form-label" for="profile-instansi">Instansi / Kelompok tani</label>
+                    <input id="profile-instansi" class="form-input" type="text" name="instansi" value="{{ old('instansi', $user->instansi) }}">
+                    @error('instansi')
+                        <p class="form-error">{{ $message }}</p>
+                    @enderror
+                </div>
+                <div>
+                    <label class="form-label" for="profile-phone">Nomor HP</label>
                     <input id="profile-phone" class="form-input" type="text" name="phone" value="{{ old('phone', $user->phone) }}">
                     @error('phone')
                         <p class="form-error">{{ $message }}</p>
                     @enderror
                 </div>
                 <div>
-                    <label class="form-label" for="profile-nik">NIK</label>
-                    <input id="profile-nik" class="form-input" type="text" name="nik" value="{{ old('nik', $user->nik) }}">
-                    @error('nik')
+                    <label class="form-label" for="profile-whatsapp">Nomor WhatsApp</label>
+                    <input id="profile-whatsapp" class="form-input" type="text" name="whatsapp" value="{{ old('whatsapp', $user->whatsapp) }}">
+                    @error('whatsapp')
                         <p class="form-error">{{ $message }}</p>
                     @enderror
                 </div>
                 <div class="sm:col-span-2">
-                    <label class="form-label" for="profile-domisili">Domisili</label>
-                    <input id="profile-domisili" class="form-input" type="text" name="domisili" value="{{ old('domisili', $user->domisili) }}">
-                    @error('domisili')
-                        <p class="form-error">{{ $message }}</p>
-                    @enderror
-                </div>
-                <div class="sm:col-span-2">
-                    <label class="form-label" for="profile-alamat">Alamat</label>
-                    <textarea id="profile-alamat" class="form-textarea" name="alamat" rows="4">{{ old('alamat', $user->alamat) }}</textarea>
+                    <label class="form-label" for="profile-alamat">Alamat (jalan)</label>
+                    <textarea id="profile-alamat" class="form-textarea" name="alamat" rows="3">{{ old('alamat', $user->alamat) }}</textarea>
                     @error('alamat')
                         <p class="form-error">{{ $message }}</p>
                     @enderror
                 </div>
+
+                @foreach (\App\Models\User::addressFieldDefinitions() as $field)
+                    <div>
+                        <label class="form-label" for="profile-{{ $field['name'] }}">{{ $field['label'] }}</label>
+                        <input
+                            id="profile-{{ $field['name'] }}"
+                            class="form-input"
+                            type="text"
+                            name="{{ $field['name'] }}"
+                            value="{{ old($field['name'], $user->{$field['name']}) }}"
+                            placeholder="{{ $field['placeholder'] }}"
+                        >
+                        @error($field['name'])
+                            <p class="form-error">{{ $message }}</p>
+                        @enderror
+                    </div>
+                @endforeach
             </div>
         </section>
     </div>

@@ -13,29 +13,30 @@ class ProductController extends Controller
 {
     public function index(Request $request)
     {
-        $products = Product::with('category')
-            ->when($request->filled('q'), fn ($q) => $q->where('name', 'like', '%' . $request->q . '%'))
-            ->when($request->filled('category'), fn ($q) => $q->where('category_id', $request->category))
+        $products = Product::with('category.parent')
+            ->when($request->filled('q'), fn ($query) => $query->where('name', 'like', '%' . $request->q . '%'))
+            ->when($request->filled('category'), fn ($query) => $query->whereHas('category', fn ($category) => $category->where('id', $request->category)->orWhereHas('parent', fn ($parent) => $parent->where('id', $request->category))))
+            ->when($request->filled('variety'), fn ($query) => $query->whereHas('category', fn ($category) => $category->where('id', $request->variety)))
             ->orderBy('name')
             ->paginate(10)
             ->withQueryString();
 
-        $categories = Category::orderBy('name')->get();
-
-        return view('admin.products.index', compact('products', 'categories'));
+        return view('admin.products.index', [
+            'products' => $products,
+            'categories' => $this->categoryTree(),
+        ]);
     }
 
     public function create()
     {
-        $categories = Category::orderBy('name')->get();
-
-        return view('admin.products.create', compact('categories'));
+        return view('admin.products.create', [
+            'categories' => $this->categoryTree(),
+        ]);
     }
 
     public function store(Request $request)
     {
         $data = $this->validateData($request);
-
         $data['slug'] = Str::slug($data['name']) . '-' . Str::random(5);
 
         if ($request->hasFile('image')) {
@@ -49,14 +50,15 @@ class ProductController extends Controller
 
     public function edit(Product $product)
     {
-        $categories = Category::orderBy('name')->get();
-
-        return view('admin.products.edit', compact('product', 'categories'));
+        return view('admin.products.edit', [
+            'product' => $product,
+            'categories' => $this->categoryTree(),
+        ]);
     }
 
     public function update(Request $request, Product $product)
     {
-        $data = $this->validateData($request, $product->id);
+        $data = $this->validateData($request);
 
         if ($request->hasFile('image')) {
             if ($product->image) {
@@ -75,12 +77,18 @@ class ProductController extends Controller
         if ($product->image) {
             Storage::disk('public')->delete($product->image);
         }
+
         $product->delete();
 
         return back()->with('success', 'Produk berhasil dihapus.');
     }
 
-    protected function validateData(Request $request, $ignoreId = null): array
+    protected function categoryTree()
+    {
+        return Category::whereNull('parent_id')->with('children')->orderBy('name')->get();
+    }
+
+    protected function validateData(Request $request): array
     {
         return $request->validate([
             'category_id' => ['required', 'exists:categories,id'],

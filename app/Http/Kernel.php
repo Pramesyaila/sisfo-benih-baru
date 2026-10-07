@@ -67,5 +67,7 @@ class Kernel extends HttpKernel
         'verified' => \Illuminate\Auth\Middleware\EnsureEmailIsVerified::class,
         // Middleware kustom untuk membatasi akses berdasarkan role user.
         'role' => \App\Http\Middleware\RoleMiddleware::class,
+        // Hanya akun Super Admin bawaan sistem yang boleh mengakses.
+        'superadmin' => \App\Http\Middleware\EnsureUserIsSuperAdmin::class,
     ];
 }

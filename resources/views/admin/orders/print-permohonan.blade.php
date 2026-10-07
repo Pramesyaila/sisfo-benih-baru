@@ -68,9 +68,10 @@ Saya yang bertanda tangan di bawah ini:</p>
 <p class="mt-4">Penyiapan dan penyerahan benih/bibit/produk hasil pertanian akan diproses setelah pembayaran dilakukan melalui kode billing sesuai ketentuan yang berlaku.</p>
 <p>Demikian permohonan ini disampaikan. Atas perhatiannya diucapkan terima kasih.</p>
 
+{{-- Lokasi diambil dari Kabupaten/Kota pemohon pada data profil. --}}
 <div class="flex justify-end mt-10">
     <div class="text-center">
-        <p>........................, {{ $order->created_at->translatedFormat('d F Y') }}</p>
+        <p>{{ $order->documentLocation() }}, {{ $order->created_at->translatedFormat('d F Y') }}</p>
         <p>Pemohon,</p>
         <div class="h-20"></div>
         <p class="font-semibold">{{ $order->user->name }}</p>

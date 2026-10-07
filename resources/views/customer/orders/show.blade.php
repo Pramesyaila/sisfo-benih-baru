@@ -7,10 +7,10 @@
     $statusTone = match ($order->status) {
         'dibatalkan', 'pembayaran_ditolak' => 'red',
         'menunggu_pembayaran', 'menunggu_verifikasi' => 'gold',
-        'selesai', 'faktur_terbit', 'siap_diambil', 'lunas' => 'green',
+        'siap_diambil', 'selesai' => 'green',
         default => 'blue',
     };
-    $steps = ['dipesan', 'diproses', 'menunggu_pembayaran', 'menunggu_verifikasi', 'lunas', 'faktur_terbit', 'siap_diambil', 'selesai'];
+    $steps = ['dipesan', 'diproses', 'menunggu_pembayaran', 'menunggu_verifikasi', 'siap_diambil', 'selesai'];
     $currentStep = array_search($order->status, $steps, true);
 @endphp
 
@@ -32,18 +32,23 @@
     </div>
 </div>
 
-@if (in_array($order->status, ['menunggu_pembayaran', 'pembayaran_ditolak']))
+@if (in_array($order->status, ['menunggu_pembayaran', 'pembayaran_ditolak'], true) && $order->billing)
     <div class="flash flash--validation" role="status">
         <span class="flash__icon"><x-customer.icon name="wallet" :size="17"></x-customer.icon></span>
         <div>
             <strong>Ada langkah yang perlu Anda lakukan.</strong>
-            <div>Silakan unggah bukti pembayaran agar petugas dapat memverifikasi pesanan Anda.</div>
+            <div>Unduh billing di bawah, lakukan pembayaran, lalu unggah bukti pembayaran agar petugas dapat memverifikasi pesanan Anda.</div>
         </div>
     </div>
 @elseif ($order->status === 'siap_diambil')
     <div class="flash flash--success" role="status">
         <span class="flash__icon"><x-customer.icon name="check" :size="17"></x-customer.icon></span>
-        <div>Pesanan Anda sudah disiapkan. Silakan lakukan pengambilan sesuai informasi dari petugas.</div>
+        <div>Pembayaran telah diverifikasi. Pesanan Anda siap diambil di lokasi pengambilan yang telah dipilih.</div>
+    </div>
+@elseif ($order->status === 'selesai')
+    <div class="flash flash--success" role="status">
+        <span class="flash__icon"><x-customer.icon name="check" :size="17"></x-customer.icon></span>
+        <div>Pengambilan telah selesai. Bukti penyelesaian dapat Anda lihat di samping halaman ini.</div>
     </div>
 @elseif ($order->status === 'dibatalkan')
     <div class="flash flash--error" role="status">
@@ -84,31 +89,35 @@
             </div>
         </section>
 
-        @if ($order->pnbpBill)
-            @php
-                $billTone = match ($order->pnbpBill->status) {
-                    'lunas' => 'green',
-                    'ditolak' => 'red',
-                    'menunggu_verifikasi' => 'gold',
-                    default => 'neutral',
-                };
-            @endphp
+        @if ($order->billing)
             <section class="surface p-5 md:p-6">
                 <div class="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
                     <div>
                         <span class="section-kicker">Dokumen pembayaran</span>
-                        <h2 class="surface__title">Tagihan PNBP</h2>
-                        <p class="surface__subtitle mt-1">Nomor {{ $order->pnbpBill->bill_number }}</p>
+                        <h2 class="surface__title">Billing</h2>
+                        <p class="surface__subtitle mt-1">Nomor {{ $order->billing->bill_number }}</p>
                     </div>
-                    <x-customer.status-pill :label="\App\Models\PnbpBill::statusLabel($order->pnbpBill->status)" :tone="$billTone"></x-customer.status-pill>
+                    <a
+                        class="btn btn--primary btn--small"
+                        href="{{ asset('storage/' . $order->billing->file_path) }}"
+                        target="_blank"
+                        rel="noopener"
+                    >
+                        <x-customer.icon name="download" :size="15"></x-customer.icon>
+                        Unduh billing
+                    </a>
                 </div>
                 <div class="grid gap-3 sm:grid-cols-3 mt-5">
-                    <div class="spec-item"><div class="spec-item__label">Jumlah tagihan</div><div class="spec-item__value">{{ $order->pnbpBill->formattedAmount() }}</div></div>
-                    <div class="spec-item"><div class="spec-item__label">Jatuh tempo</div><div class="spec-item__value">{{ optional($order->pnbpBill->due_date)->format('d M Y') ?: '-' }}</div></div>
-                    <div class="spec-item"><div class="spec-item__label">Status pembayaran</div><div class="spec-item__value">{{ \App\Models\PnbpBill::statusLabel($order->pnbpBill->status) }}</div></div>
+                    <div class="spec-item"><div class="spec-item__label">Jumlah tagihan</div><div class="spec-item__value">{{ $order->billing->formattedAmount() }}</div></div>
+                    <div class="spec-item"><div class="spec-item__label">Tanggal dikirim</div><div class="spec-item__value">{{ optional($order->billing->sent_at)->format('d M Y') ?: '-' }}</div></div>
+                    <div class="spec-item"><div class="spec-item__label">Status pembayaran</div><div class="spec-item__value">{{ \App\Models\Order::statusLabel($order->status) }}</div></div>
                 </div>
 
-                @if (in_array($order->status, ['menunggu_pembayaran', 'pembayaran_ditolak']))
+                @if ($order->billing->notes)
+                    <p class="form-hint mt-4">{{ $order->billing->notes }}</p>
+                @endif
+
+                @if (in_array($order->status, ['menunggu_pembayaran', 'pembayaran_ditolak'], true))
                     <form action="{{ route('orders.uploadProof', $order) }}" method="POST" enctype="multipart/form-data" class="mt-5">
                         @csrf
                         <label class="form-label" for="payment-proof">Unggah bukti pembayaran</label>
@@ -125,7 +134,50 @@
                             Kirim bukti pembayaran
                         </button>
                     </form>
+                @elseif ($order->paymentProofs->isNotEmpty())
+                    <p class="form-hint mt-5">Bukti pembayaran Anda sudah diterima dan menunggu keputusan petugas.</p>
                 @endif
+            </section>
+        @elseif (in_array($order->status, ['menunggu_pembayaran', 'pembayaran_ditolak'], true))
+            <section class="surface p-5 md:p-6">
+                <span class="section-kicker">Dokumen pembayaran</span>
+                <h2 class="surface__title">Billing belum tersedia</h2>
+                <p class="surface__subtitle mt-1">Petugas layanan sedang menyiapkan dokumen billing untuk pesanan Anda.</p>
+            </section>
+        @endif
+
+        @if ($order->invoice)
+            <section class="surface p-5 md:p-6">
+                <div class="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+                    <div>
+                        <span class="section-kicker">Dokumen penjualan</span>
+                        <h2 class="surface__title">Faktur</h2>
+                        <p class="surface__subtitle mt-1">{{ $order->invoice->invoice_number }}</p>
+                    </div>
+                    <a
+                        class="btn btn--primary btn--small"
+                        href="{{ route('orders.invoice', $order) }}"
+                        target="_blank"
+                        rel="noopener"
+                    >
+                        <x-customer.icon name="download" :size="15"></x-customer.icon>
+                        Unduh / cetak faktur
+                    </a>
+                </div>
+                <div class="grid gap-3 sm:grid-cols-3 mt-5">
+                    <div class="spec-item">
+                        <div class="spec-item__label">Total faktur</div>
+                        <div class="spec-item__value">{{ $order->invoice->formattedTotal() }}</div>
+                    </div>
+                    <div class="spec-item">
+                        <div class="spec-item__label">Tanggal pengambilan</div>
+                        <div class="spec-item__value">{{ optional($order->invoice->pickup_date)->format('d M Y') ?: '-' }}</div>
+                    </div>
+                    <div class="spec-item">
+                        <div class="spec-item__label">Lokasi pengambilan</div>
+                        <div class="spec-item__value">{{ $order->invoice->pickupLocationLabel() }}</div>
+                    </div>
+                </div>
             </section>
         @endif
 
@@ -146,52 +198,30 @@
                         @endphp
                         <div class="flex flex-col gap-2 px-5 py-4 sm:flex-row sm:items-center sm:justify-between">
                             <div class="flex items-center gap-3">
-                                <span class="trust-item__icon"><x-customer.icon name="file" :size="18"></x-customer.icon></span>
+                                <span class="trust-item__icon">
+                                    <x-customer.icon name="file" :size="18"></x-customer.icon>
+                                </span>
                                 <div>
-                                    <a class="text-xs font-extrabold text-[var(--forest-800)] no-underline hover:underline" href="{{ asset('storage/' . $proof->file_path) }}" target="_blank" rel="noopener">Lihat berkas bukti bayar</a>
-                                    <p class="mt-1 text-[10px] text-[var(--muted)]">Diunggah {{ $proof->created_at->format('d M Y, H:i') }}</p>
+                                    <a
+                                        class="text-xs font-extrabold text-[var(--forest-800)] no-underline hover:underline"
+                                        href="{{ asset('storage/' . $proof->file_path) }}"
+                                        target="_blank"
+                                        rel="noopener"
+                                    >
+                                        Lihat berkas bukti bayar
+                                    </a>
+                                    <p class="mt-1 text-[10px] text-[var(--muted)]">
+                                        Diunggah {{ $proof->created_at->format('d M Y, H:i') }}
+                                        @if ($proof->note)
+                                            &middot; Catatan: {{ $proof->note }}
+                                        @endif
+                                    </p>
                                 </div>
                             </div>
                             <x-customer.status-pill :label="ucfirst($proof->status)" :tone="$proofTone"></x-customer.status-pill>
                         </div>
-        @if($order->pnbpBill)
-    <div class="bg-white rounded-xl shadow-sm border border-gray-100 p-5">
-        <h3 class="font-semibold mb-2">Tagihan PNBP {{ $order->pnbpBill->bill_number }}</h3>
-        <pre class="whitespace-pre-wrap text-xs bg-base p-3 rounded-md border">{{ $order->pnbpBill->content }}</pre>
-        <button onclick="window.print()" class="mt-2 text-primary-dark text-sm font-semibold hover:underline">🖨️ Cetak Tagihan</button>
-    </div>
-@endif
-
-        @if($order->paymentProofs->isNotEmpty())
-            <div class="bg-white rounded-xl shadow-sm border border-gray-100 p-5">
-                <h2 class="font-semibold mb-2">Riwayat Bukti Pembayaran</h2>
-                <ul class="text-sm divide-y">
-                    @foreach($order->paymentProofs as $proof)
-                        <li class="py-2 flex justify-between items-center">
-                            <a href="{{ asset('storage/'.$proof->file_path) }}" target="_blank" class="text-primary-dark hover:underline">Lihat berkas</a>
-                            <span class="badge {{ $proof->status === 'valid' ? 'bg-primary text-white' : ($proof->status === 'ditolak' ? 'bg-red-100 text-red-700' : 'bg-accent-light text-primary-dark') }}">
-                                {{ ucfirst($proof->status) }}
-                            </span>
-                        </li>
                     @endforeach
                 </div>
-            </section>
-        @endif
-
-        @if ($order->contract)
-            <section class="surface p-5 md:p-6" id="kontrak">
-                <div class="flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between">
-                    <div>
-                        <span class="section-kicker">Dokumen pesanan</span>
-                        <h2 class="surface__title">Kontrak</h2>
-                        <p class="surface__subtitle mt-1">Nomor {{ $order->contract->contract_number }}</p>
-                    </div>
-                    <button class="btn btn--secondary btn--small" type="button" onclick="window.print()">
-                        <x-customer.icon name="file" :size="14"></x-customer.icon>
-                        Cetak kontrak
-                    </button>
-                </div>
-                <pre class="mt-5 whitespace-pre-wrap rounded-xl border border-[var(--line)] bg-[var(--surface-muted)] p-4 text-xs leading-6 text-[var(--ink-soft)]">{{ $order->contract->content }}</pre>
             </section>
         @endif
     </div>
@@ -226,31 +256,37 @@
                     </li>
                 @endforeach
             </ol>
+            <div class="mt-5 space-y-2 border-t border-[var(--line)] pt-4 text-[11px] text-[var(--muted)]">
+                <div class="flex justify-between gap-3"><span>Jadwal pengambilan</span><strong class="text-[var(--ink-soft)]">{{ optional($order->pickup_date)->format('d M Y') ?: '-' }}</strong></div>
+                <div class="flex justify-between gap-3"><span>Lokasi</span><strong class="text-[var(--ink-soft)]">{{ $order->pickupLocationLabel() }}</strong></div>
+            </div>
         </section>
 
-        @if ($order->invoice)
+        @if ($order->completionReceipt)
             <section class="surface p-5 md:p-6">
                 <div class="flex items-center gap-3">
-                    <span class="trust-item__icon"><x-customer.icon name="file" :size="19"></x-customer.icon></span>
+                    <span class="trust-item__icon"><x-customer.icon name="check" :size="19"></x-customer.icon></span>
                     <div>
-                        <h2 class="surface__title">Faktur penjualan</h2>
-                        <p class="surface__subtitle mt-1">{{ $order->invoice->invoice_number }}</p>
+                        <h2 class="surface__title">Bukti penyelesaian</h2>
+                        <p class="surface__subtitle mt-1">{{ $order->completionReceipt->receipt_number }}</p>
                     </div>
                 </div>
-                <div class="mt-4 flex items-center justify-between gap-3">
-                    <span class="text-xs text-[var(--muted)]">Total faktur</span>
-                    <strong class="text-sm text-[var(--forest-900)]">{{ $order->invoice->formattedTotal() }}</strong>
-                </div>
-                <button class="btn btn--secondary w-full mt-4" type="button" onclick="window.print()">
-                    <x-customer.icon name="file" :size="15"></x-customer.icon>
-                    Cetak faktur
-                </button>
+                <p class="form-hint mt-4">Diunggah {{ optional($order->completionReceipt->completed_at)->format('d M Y, H:i') }}</p>
+                <a
+                    class="btn btn--secondary w-full mt-4"
+                    href="{{ asset('storage/' . $order->completionReceipt->file_path) }}"
+                    target="_blank"
+                    rel="noopener"
+                >
+                    <x-customer.icon name="download" :size="15"></x-customer.icon>
+                    Lihat faktur selesai
+                </a>
             </section>
         @endif
 
         <section class="profile-note">
             <strong class="block text-[var(--forest-900)] mb-1">Butuh bantuan?</strong>
-            Hubungi petugas layanan melalui kanal resmi instansi untuk informasi kontrak dan status pembayaran.
+            Hubungi petugas layanan melalui kanal resmi instansi untuk informasi billing dan status pembayaran.
         </section>
     </aside>
 </div>

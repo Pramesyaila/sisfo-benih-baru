@@ -39,7 +39,7 @@
                     $tone = match ($order->status) {
                         'dibatalkan', 'pembayaran_ditolak' => 'red',
                         'menunggu_pembayaran', 'menunggu_verifikasi' => 'gold',
-                        'selesai', 'faktur_terbit', 'siap_diambil', 'lunas' => 'green',
+                        'selesai', 'siap_diambil' => 'green',
                         default => 'blue',
                     };
                 @endphp
@@ -48,6 +48,9 @@
                         <div>
                             <span class="order-list__label">Nomor pesanan</span>
                             <strong class="order-list__number">{{ $order->order_number }}</strong>
+                            @if ($order->billing)
+                                <span class="order-list__label mt-1 block">Billing {{ $order->billing->bill_number }} tersedia</span>
+                            @endif
                         </div>
                         <x-customer.status-pill :label="\App\Models\Order::statusLabel($order->status)" :tone="$tone"></x-customer.status-pill>
                     </div>

@@ -70,6 +70,24 @@
             <path d="m8 8 4-4 4 4"></path>
             <path d="M5 14v4.5A1.5 1.5 0 0 0 6.5 20h11a1.5 1.5 0 0 0 1.5-1.5V14"></path>
             @break
+        @case('download')
+            <path d="M12 4v11"></path>
+            <path d="m8 11 4 4 4-4"></path>
+            <path d="M5 17.5V19a1.5 1.5 0 0 0 1.5 1.5h11A1.5 1.5 0 0 0 19 19v-1.5"></path>
+            @break
+        @case('bell')
+            <path d="M18 15.5V10a6 6 0 1 0-12 0v5.5L4.5 18h15L18 15.5Z"></path>
+            <path d="M9.5 20.5a2.5 2.5 0 0 0 5 0"></path>
+            @break
+        @case('truck')
+            <path d="M3 7h10v9H3zM13 10h3.5l2.5 3v3h-6"></path>
+            <circle cx="7" cy="18" r="1.6"></circle>
+            <circle cx="16.5" cy="18" r="1.6"></circle>
+            @break
+        @case('tag')
+            <path d="M4 10.5V5a1 1 0 0 1 1-1h5.5l9 9-6.5 6.5-9-9Z"></path>
+            <circle cx="8" cy="8" r="1.2"></circle>
+            @break
         @case('package')
             <path d="m4 7 8-4 8 4-8 4-8-4Z"></path>
             <path d="M4 7v10l8 4 8-4V7M12 11v10"></path>
