@@ -72,10 +72,10 @@
                             <x-customer.icon name="sprout" :size="23"></x-customer.icon>
                         @endif
                     </span>
-                    <span class="brand-copy">
+                    {{-- <span class="brand-copy">
                         <span class="brand-kicker">KATALOG RESMI</span>
                         <span class="brand-name">Benih &amp; Bibit</span>
-                    </span>
+                    </span> --}}
                 </a>
 
                 <form action="{{ route('catalog.index') }}" method="GET" class="header-search" role="search">

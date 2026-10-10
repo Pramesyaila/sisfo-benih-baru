@@ -7,7 +7,7 @@
 --}}
 <a href="{{ route('admin.dashboard') }}"
    class="{{ $linkClass }} {{ request()->routeIs('admin.dashboard') ? $activeClass : '' }}">
-    <span class="nav-item"><span class="nav-icon">📊</span> Dashboard</span>
+    <span class="nav-item">Dashboard</span>
 </a>
 
 @if (auth()->user()->isPetugasLayanan())
@@ -16,7 +16,7 @@
     <a href="{{ route('admin.orders.index') }}"
        class="{{ $linkClass }} {{ request()->routeIs('admin.orders.*') ? $activeClass : '' }}">
         <span class="nav-item">
-            <span class="nav-icon">🧾</span> Pesanan
+        Pesanan
             @if (($pendingOrdersCount ?? 0) > 0)
                 <span class="nav-badge nav-badge--orders" title="{{ $pendingOrdersCount }} pesanan baru">{{ $pendingOrdersCount }}</span>
             @endif
@@ -26,7 +26,7 @@
     <a href="{{ route('admin.paymentProofs.index') }}"
        class="{{ $linkClass }} {{ request()->routeIs('admin.paymentProofs.*') ? $activeClass : '' }}">
         <span class="nav-item">
-            <span class="nav-icon">💳</span> Verifikasi Pembayaran
+            Verifikasi Pembayaran
             @if (($pendingPaymentsCount ?? 0) > 0)
                 <span class="nav-badge nav-badge--verify" title="{{ $pendingPaymentsCount }} bukti menunggu verifikasi">{{ $pendingPaymentsCount }}</span>
             @endif
@@ -35,7 +35,7 @@
 
     <a href="{{ route('admin.notifications.index') }}"
        class="{{ $linkClass }} {{ request()->routeIs('admin.notifications.*') ? $activeClass : '' }}">
-        <span class="nav-item"><span class="nav-icon">📨</span> Notifikasi Email</span>
+        <span class="nav-item">Notifikasi Email</span>
     </a>
 
     <p class="nav-heading">Sistem</p>
@@ -43,13 +43,13 @@
     @if (auth()->user()->isSuperAdmin())
         <a href="{{ route('admin.admins.index') }}"
            class="{{ $linkClass }} {{ request()->routeIs('admin.admins.*') ? $activeClass : '' }}">
-            <span class="nav-item"><span class="nav-icon">👥</span> Kelola Admin</span>
+            <span class="nav-item">Kelola Admin</span>
         </a>
     @endif
 
     <a href="{{ route('admin.landing.edit') }}"
        class="{{ $linkClass }} {{ request()->routeIs('admin.landing.*') ? $activeClass : '' }}">
-        <span class="nav-item"><span class="nav-icon">🌐</span> Landing Page</span>
+        <span class="nav-item">Landing Page</span>
     </a>
 @endif
 
@@ -58,27 +58,27 @@
 
     <a href="{{ route('admin.categories.index') }}"
        class="{{ $linkClass }} {{ request()->routeIs('admin.categories.*') || request()->routeIs('admin.subcategories.*') ? $activeClass : '' }}">
-        <span class="nav-item"><span class="nav-icon">🏷️</span> Kategori &amp; Varietas</span>
+        <span class="nav-item">Kategori &amp; Varietas</span>
     </a>
 
     <a href="{{ route('admin.products.index') }}"
        class="{{ $linkClass }} {{ request()->routeIs('admin.products.*') ? $activeClass : '' }}">
-        <span class="nav-item"><span class="nav-icon">🌱</span> Produk</span>
+        <span class="nav-item">Produk</span>
     </a>
 
     <a href="{{ route('admin.stock.index') }}"
        class="{{ $linkClass }} {{ request()->routeIs('admin.stock.index') ? $activeClass : '' }}">
-        <span class="nav-item"><span class="nav-icon">📦</span> Stok Masuk/Keluar</span>
+        <span class="nav-item">Stok Masuk/Keluar</span>
     </a>
 
     <a href="{{ route('admin.stock.history') }}"
        class="{{ $linkClass }} {{ request()->routeIs('admin.stock.history') ? $activeClass : '' }}">
-        <span class="nav-item"><span class="nav-icon">🕒</span> Riwayat Stok</span>
+        <span class="nav-item">Riwayat Stok</span>
     </a>
 
     <a href="{{ route('admin.warehouse.index') }}"
        class="{{ $linkClass }} {{ request()->routeIs('admin.warehouse.*') ? $activeClass : '' }}">
-        <span class="nav-item"><span class="nav-icon">🚚</span> Pengambilan Benih</span>
+        <span class="nav-item">Pengambilan Benih</span>
     </a>
 @endif
 
@@ -86,21 +86,21 @@
 
 <a href="{{ route('admin.reports.sales') }}"
    class="{{ $linkClass }} {{ request()->routeIs('admin.reports.sales') ? $activeClass : '' }}">
-    <span class="nav-item"><span class="nav-icon">🧾</span> Laporan Penjualan</span>
+    <span class="nav-item">Laporan Penjualan</span>
 </a>
 
 <a href="{{ route('admin.reports.stock') }}"
    class="{{ $linkClass }} {{ request()->routeIs('admin.reports.stock') ? $activeClass : '' }}">
-    <span class="nav-item"><span class="nav-icon">📈</span> Laporan Stok</span>
+    <span class="nav-item">Laporan Stok</span>
 </a>
 
 <p class="nav-heading">Lainnya</p>
 
 <a href="{{ route('profile.show') }}"
    class="{{ $linkClass }} {{ request()->routeIs('profile.*') ? $activeClass : '' }}">
-    <span class="nav-item"><span class="nav-icon">👤</span> Profile</span>
+    <span class="nav-item">Profile</span>
 </a>
 
 <a href="{{ route('catalog.index') }}" class="{{ $linkClass }}">
-    <span class="nav-item"><span class="nav-icon">🛍️</span> Lihat Katalog</span>
+    <span class="nav-item">Lihat Katalog</span>
 </a>

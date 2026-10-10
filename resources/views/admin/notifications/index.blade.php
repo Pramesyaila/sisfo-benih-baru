@@ -3,7 +3,7 @@
 @section('title', 'Notifikasi Email')
 
 @section('content')
-<div class="max-w-4xl">
+<div class="w-full min-w-0">
     <p class="text-sm text-gray-500 mb-4">
         Notifikasi dikirim ke alamat email yang didaftarkan masing-masing akun pada saat registrasi.
         Alur lengkap notifikasi dapat dilihat pada tabel di bawah ini.

@@ -95,17 +95,29 @@
     }
 
     .brand-mark {
-        width: 42px;
-        height: 42px;
-        display: inline-flex;
+        display: flex;
         align-items: center;
         justify-content: center;
-        color: var(--gold-300);
-        background: var(--forest-900);
-        border-radius: 13px 13px 13px 4px;
-        box-shadow: 0 7px 16px rgba(22, 101, 52, .16);
+        flex-shrink: 0;
+
+        width: auto;
+        height: auto;
+        padding: 0;
+
+        background: transparent;
+        border: none;
+        border-radius: 0;
+        box-shadow: none;
     }
 
+    .brand-logo {
+        display: block;
+        width: auto;
+        height: 56px;
+        max-width: 180px;
+        object-fit: contain;
+        border-radius: 0;
+    }
     .brand-copy { display: grid; line-height: 1.15; }
     .brand-kicker {
         color: var(--muted);

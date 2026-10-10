@@ -3,7 +3,7 @@
 @section('title', 'Tambah Akun Petugas')
 
 @section('content')
-<div class="max-w-3xl">
+<div class="w-full min-w-">
     <a href="{{ route('admin.admins.index') }}" class="text-sm text-primary-dark hover:underline">&larr; Kembali ke daftar petugas</a>
 
     <div class="bg-white rounded-xl shadow-sm border border-gray-100 p-6 mt-4">

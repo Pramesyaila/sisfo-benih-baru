@@ -24,7 +24,7 @@
         .nav-badge { display: inline-flex; align-items: center; justify-content: center; min-width: 1.25rem; height: 1.25rem; padding: 0 .3rem; margin-left: auto; border-radius: 9999px; font-size: .65rem; font-weight: 800; }
         .nav-badge--orders { background: #EAB308; color: #166534; }
         .nav-badge--verify { background: #FEF9C3; color: #166534; }
-        .admin-container { width: 100%; max-width: 1400px; margin: 0 auto; }
+        .admin-container { width: 100%; max-width: none; margin: 0 auto; min-width:0 ;}
 
         /* ---------- Sidebar dan navigasi ---------- */
         .admin-sidebar {
@@ -164,7 +164,7 @@
                 </nav>
             </div>
         </div>
-        <main class="flex-1 p-4 lg:p-6">
+        <main class="flex-1 min-w-0 w-full p-4 lg:p-6">
             <div class="admin-container">
                 <div class="space-y-3 mb-4 empty:mb-0">
                     @if (session('success'))
