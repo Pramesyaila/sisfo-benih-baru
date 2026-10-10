@@ -3,47 +3,85 @@
 @section('title', 'Keranjang Belanja')
 
 @section('content')
-<h1 class="text-xl font-bold text-primary-dark mb-4">Keranjang Belanja</h1>
+<div class="page-header">
+    <span class="page-header__eyebrow">Langkah 2 dari 3</span>
+    <h1 class="page-header__title">Keranjang Anda</h1>
+    <p class="page-header__description">Periksa kembali pilihan Anda sebelum melanjutkan ke proses pemesanan.</p>
+</div>
 
-@if($cart->isEmpty())
-    <div class="bg-white rounded-xl p-10 text-center text-gray-500 shadow-sm">
-        Keranjang anda masih kosong.
-        <div class="mt-3">
-            <a href="{{ route('catalog.index') }}" class="text-primary-dark font-semibold hover:underline">Mulai belanja &rarr;</a>
-        </div>
+<div class="order-steps" aria-label="Tahapan pemesanan">
+    <div class="order-step order-step--done">
+        <span class="order-step__number"><x-customer.icon name="check" :size="13"></x-customer.icon></span>
+        <span class="order-step__label">Pilih produk</span>
     </div>
+    <div class="order-step order-step--active">
+        <span class="order-step__number">2</span>
+        <span class="order-step__label">Keranjang</span>
+    </div>
+    <div class="order-step">
+        <span class="order-step__number">3</span>
+        <span class="order-step__label">Pesan</span>
+    </div>
+</div>
+
+@if ($cart->isEmpty())
+    <x-customer.empty-state
+        eyebrow="Belum ada produk"
+        title="Keranjang masih kosong"
+        description="Mulai dari katalog dan pilih benih atau bibit yang ingin Anda pesan."
+        action-label="Jelajahi katalog"
+        :action-url="route('catalog.index')"
+        icon="bag"
+    ></x-customer.empty-state>
 @else
-    <div class="bg-white rounded-xl shadow-sm border border-gray-100 divide-y">
-        @foreach($cart as $row)
-            <div class="p-4 flex items-center gap-4">
-                <div class="h-16 w-16 bg-accent-light rounded-md flex items-center justify-center text-2xl flex-shrink-0">🌱</div>
-                <div class="flex-1 min-w-0">
-                    <p class="font-semibold truncate">{{ $row['product']->name }}</p>
-                    <p class="text-xs text-gray-500">{{ $row['product']->packagingLabel() }} &middot; {{ $row['product']->formattedPrice() }}</p>
+    <div class="cart-layout">
+        <section class="surface cart-list" aria-label="Produk dalam keranjang">
+            @foreach ($cart as $row)
+                <div class="cart-row">
+                    <div class="cart-row__art">
+                        <x-customer.product-art :product="$row['product']" size="compact"></x-customer.product-art>
+                    </div>
+                    <div class="cart-row__content">
+                        <p class="cart-row__name">{{ $row['product']->name }}</p>
+                        <p class="cart-row__meta">{{ $row['product']->packagingLabel() }} &middot; {{ $row['product']->formattedPrice() }}</p>
+                    </div>
+                    <form action="{{ route('cart.update', $row['product']) }}" method="POST" class="cart-row__quantity">
+                        @csrf
+                        @method('PATCH')
+                        <label class="sr-only" for="cart-quantity-{{ $row['product']->id }}">Jumlah {{ $row['product']->name }}</label>
+                        <input id="cart-quantity-{{ $row['product']->id }}" class="form-input" type="number" name="qty" value="{{ $row['qty'] }}" min="1" max="{{ $row['product']->stock }}">
+                        <button class="btn btn--secondary btn--small" type="submit">Ubah</button>
+                    </form>
+                    <div class="cart-row__subtotal">Rp{{ number_format($row['subtotal'], 0, ',', '.') }}</div>
+                    <form action="{{ route('cart.remove', $row['product']) }}" method="POST" class="cart-row__remove-form">
+                        @csrf
+                        @method('DELETE')
+                        <button class="cart-row__remove" type="submit">Hapus</button>
+                    </form>
                 </div>
-                <form action="{{ route('cart.update', $row['product']) }}" method="POST" class="flex items-center gap-1">
-                    @csrf @method('PATCH')
-                    <input type="number" name="qty" value="{{ $row['qty'] }}" min="1" max="{{ $row['product']->stock }}"
-                        class="w-16 rounded-md border-gray-300 focus:border-primary focus:ring-primary px-2 py-1 border text-sm">
-                    <button class="text-xs bg-base border border-gray-200 px-2 py-1.5 rounded-md hover:border-primary">Update</button>
-                </form>
-                <p class="w-28 text-right font-semibold text-primary-dark">Rp{{ number_format($row['subtotal'],0,',','.') }}</p>
-                <form action="{{ route('cart.remove', $row['product']) }}" method="POST">
-                    @csrf @method('DELETE')
-                    <button class="text-red-500 hover:text-red-700 text-sm">Hapus</button>
-                </form>
-            </div>
-        @endforeach
-    </div>
+            @endforeach
+        </section>
 
-    <div class="mt-6 bg-white rounded-xl shadow-sm border border-gray-100 p-5 flex items-center justify-between">
-        <div>
-            <p class="text-sm text-gray-500">Total belanja</p>
-            <p class="text-2xl font-bold text-primary-dark">Rp{{ number_format($cart->sum('subtotal'),0,',','.') }}</p>
-        </div>
-        <a href="{{ route('checkout.index') }}" class="bg-accent hover:brightness-95 text-primary-dark font-bold px-6 py-3 rounded-md">
-            Lanjut ke Checkout &rarr;
-        </a>
+        <aside class="surface summary-card">
+            <h2 class="summary-card__title">Ringkasan belanja</h2>
+            <div class="summary-row">
+                <span>Produk dipilih</span>
+                <strong>{{ $cart->count() }} jenis</strong>
+            </div>
+            <div class="summary-row">
+                <span>Total item</span>
+                <strong>{{ $cart->sum('qty') }} item</strong>
+            </div>
+            <div class="summary-row summary-total">
+                <span>Total</span>
+                <strong>Rp{{ number_format($cart->sum('subtotal'), 0, ',', '.') }}</strong>
+            </div>
+            <a class="btn btn--primary w-full mt-5" href="{{ route('checkout.index') }}">
+                Lanjut ke pemesanan
+                <x-customer.icon name="arrow-right" :size="16"></x-customer.icon>
+            </a>
+            <p class="summary-note">Pesanan akan dibuat setelah Anda mengisi catatan pada langkah pemesanan. Stok dan proses pembayaran akan dikonfirmasi oleh petugas.</p>
+        </aside>
     </div>
 @endif
 @endsection

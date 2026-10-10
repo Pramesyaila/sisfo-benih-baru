@@ -7,7 +7,7 @@ use Illuminate\Database\Eloquent\Model;
 class PaymentProof extends Model
 {
     protected $fillable = [
-        'order_id', 'pnbp_bill_id', 'file_path', 'status', 'note', 'verified_by', 'verified_at',
+        'order_id', 'file_path', 'status', 'note', 'verified_by', 'verified_at',
     ];
 
     protected $casts = [

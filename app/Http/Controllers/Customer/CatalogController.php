@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Customer;
 
 use App\Http\Controllers\Controller;
 use App\Models\Category;
+use App\Models\LandingContent;
 use App\Models\Product;
 use Illuminate\Http\Request;
 
@@ -11,28 +12,53 @@ class CatalogController extends Controller
 {
     public function index(Request $request)
     {
-        $categories = Category::orderBy('name')->get();
+        $categories = Category::whereNull('parent_id')->with('children')->orderBy('name')->get();
 
-        $products = Product::with('category')
+        $selectedCategory = $request->string('category')->toString();
+        $selectedVariety = $request->string('variety')->toString();
+        $keyword = $request->string('q')->toString();
+
+        $products = Product::with(['category.parent'])
             ->where('status', 'aktif')
-            ->when($request->filled('category'), function ($q) use ($request) {
-                $q->whereHas('category', fn ($c) => $c->where('slug', $request->category));
+            ->when($selectedVariety !== '', function ($query) use ($selectedVariety, $selectedCategory) {
+                $query->whereHas('category', function ($categoryQuery) use ($selectedVariety, $selectedCategory) {
+                    $categoryQuery->where('slug', $selectedVariety)
+                        ->when(
+                            $selectedCategory !== '',
+                            fn ($parentQuery) => $parentQuery->whereHas('parent', fn ($parent) => $parent->where('slug', $selectedCategory))
+                        );
+                });
             })
-            ->when($request->filled('q'), function ($q) use ($request) {
-                $q->where('name', 'like', '%' . $request->q . '%');
+            ->when($selectedVariety === '' && $selectedCategory !== '', function ($query) use ($selectedCategory) {
+                // Kategori tanpa varietas tetap ikut tampil saat kategori induknya dipilih.
+                $query->whereHas('category', function ($categoryQuery) use ($selectedCategory) {
+                    $categoryQuery->where('slug', $selectedCategory)
+                        ->orWhereHas('parent', fn ($parent) => $parent->where('slug', $selectedCategory));
+                });
             })
+            ->when($keyword !== '', fn ($query) => $query->where('name', 'like', '%' . $keyword . '%'))
             ->orderBy('name')
             ->paginate(9)
             ->withQueryString();
 
-        return view('customer.catalog.index', compact('categories', 'products'));
+        return view('customer.catalog.index', [
+            'categories' => $categories,
+            'products' => $products,
+            'selectedCategory' => $selectedCategory,
+            'selectedVariety' => $selectedVariety,
+            'keyword' => $keyword,
+            'landing' => LandingContent::current(),
+        ]);
     }
 
     public function show(Product $product)
     {
         abort_unless($product->status === 'aktif', 404);
 
-        $related = Product::where('category_id', $product->category_id)
+        $product->load('category.parent');
+
+        $related = Product::with('category')
+            ->where('category_id', $product->category_id)
             ->where('id', '!=', $product->id)
             ->where('status', 'aktif')
             ->limit(4)

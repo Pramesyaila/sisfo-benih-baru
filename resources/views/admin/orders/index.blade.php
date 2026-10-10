@@ -7,7 +7,7 @@
     <input type="text" name="q" value="{{ request('q') }}" placeholder="Cari no. pesanan / konsumen..." class="rounded-md border-gray-300 px-3 py-2 border text-sm">
     <select name="status" class="rounded-md border-gray-300 px-3 py-2 border text-sm">
         <option value="">Semua Status</option>
-        @foreach(['dipesan','diproses','menunggu_pembayaran','menunggu_verifikasi','pembayaran_ditolak','lunas','faktur_terbit','siap_diambil','selesai','dibatalkan'] as $s)
+        @foreach(['dipesan','diproses','menunggu_pembayaran','menunggu_verifikasi','pembayaran_ditolak','siap_diambil','selesai','dibatalkan'] as $s)
             <option value="{{ $s }}" @selected(request('status')===$s)>{{ \App\Models\Order::statusLabel($s) }}</option>
         @endforeach
     </select>
@@ -24,7 +24,7 @@
             <tr>
                 <td class="px-4 py-3 font-medium">{{ $order->order_number }}</td>
                 <td class="px-4 py-3">{{ $order->user->name }}</td>
-                <td class="px-4 py-3">{{ $order->created_at->format('d/m/Y') }}</td>
+                <td class="px-4 py-3">{{ $order->created_at->translatedFormat('d/m/Y') }}</td>
                 <td class="px-4 py-3">{{ $order->formattedTotal() }}</td>
                 <td class="px-4 py-3"><span class="badge {{ $order->statusBadgeColor() }}">{{ \App\Models\Order::statusLabel($order->status) }}</span></td>
                 <td class="px-4 py-3 text-right"><a href="{{ route('admin.orders.show', $order) }}" class="text-primary-dark hover:underline">Kelola</a></td>

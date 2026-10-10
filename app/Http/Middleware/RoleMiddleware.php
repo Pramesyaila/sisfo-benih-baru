@@ -10,7 +10,7 @@ class RoleMiddleware
 {
     /**
      * Membatasi akses route berdasarkan role user.
-     * Contoh pemakaian di routes: ->middleware('role:manager_gudang,petugas_layanan')
+     * Contoh pemakaian di routes: ->middleware('role:petugas_layanan,petugas_gudang')
      */
     public function handle(Request $request, Closure $next, ...$roles): Response
     {

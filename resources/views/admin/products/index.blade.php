@@ -12,6 +12,14 @@
                 <option value="{{ $cat->id }}" @selected(request('category') == $cat->id)>{{ $cat->name }}</option>
             @endforeach
         </select>
+        <select name="variety" class="rounded-md border-gray-300 focus:border-primary focus:ring-primary px-3 py-2 border text-sm">
+            <option value="">Semua Varietas</option>
+            @foreach($categories as $cat)
+                @foreach($cat->children as $child)
+                    <option value="{{ $child->id }}" @selected(request('variety') == $child->id)>{{ $cat->name }} &rsaquo; {{ $child->name }}</option>
+                @endforeach
+            @endforeach
+        </select>
         <button class="bg-base border border-gray-200 px-3 py-2 rounded-md text-sm hover:border-primary">Filter</button>
     </form>
     <a href="{{ route('admin.products.create') }}" class="bg-primary hover:bg-primary-dark text-white font-semibold px-4 py-2 rounded-md text-sm">+ Tambah Produk</a>
@@ -41,10 +49,15 @@
                 </td>
                 <td class="px-4 py-3 text-right space-x-2">
                     <a href="{{ route('admin.products.edit', $product) }}" class="text-primary-dark hover:underline">Edit</a>
-                    <form action="{{ route('admin.products.destroy', $product) }}" method="POST" class="inline" onsubmit="return confirm('Hapus produk ini?')">
-                        @csrf @method('DELETE')
-                        <button class="text-red-500 hover:underline">Hapus</button>
-                    </form>
+                    @include('partials.confirm-form', [
+                        'action' => route('admin.products.destroy', $product),
+                        'method' => 'DELETE',
+                        'label' => 'Hapus',
+                        'title' => 'Hapus produk',
+                        'message' => 'Hapus produk ' . $product->name . ' dari katalog?',
+                        'confirmLabel' => 'Ya, Hapus',
+                        'buttonClass' => 'text-red-500 hover:underline',
+                    ])
                 </td>
             </tr>
             @empty

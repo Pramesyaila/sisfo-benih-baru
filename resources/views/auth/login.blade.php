@@ -3,49 +3,62 @@
 @section('title', 'Masuk')
 
 @section('content')
-<div class="max-w-md mx-auto bg-white shadow rounded-xl p-8 mt-6 border-t-4 border-accent">
-    <div class="text-center mb-6">
-        <div class="mx-auto bg-accent-light text-primary-dark w-14 h-14 rounded-full flex items-center justify-center text-2xl mb-3">🌾</div>
-        <h1 class="text-xl font-bold text-primary-dark">Masuk ke Sistem</h1>
-        <p class="text-sm text-gray-500 mt-1">
-            Satu halaman login untuk Konsumen maupun Petugas/Pengelola.<br>
-            Sistem akan mengarahkan anda secara otomatis sesuai hak akses.
-        </p>
-    </div>
-
-    <form method="POST" action="{{ route('login') }}" class="space-y-4">
-        @csrf
+<div class="auth-layout">
+    <aside class="auth-aside">
         <div>
-            <label class="block text-sm font-medium mb-1">Email</label>
-            <input type="email" name="email" value="{{ old('email') }}" required autofocus
-                class="w-full rounded-md border-gray-300 focus:border-primary focus:ring-primary px-3 py-2 border">
+            <span class="auth-aside__eyebrow">Selamat datang kembali</span>
+            <h1 class="auth-aside__title">Mari lanjutkan<br>perjalanan tumbuh.</h1>
+            <p class="auth-aside__copy">Masuk untuk memilih benih, membuat pesanan, dan mengikuti prosesnya dari satu akun.</p>
         </div>
-        <div>
-            <label class="block text-sm font-medium mb-1">Kata Sandi</label>
-            <input type="password" name="password" required
-                class="w-full rounded-md border-gray-300 focus:border-primary focus:ring-primary px-3 py-2 border">
+        <div class="auth-aside__art">
+            <x-customer.icon name="sprout" :size="96"></x-customer.icon>
+            <small>benih · bibit · peluang tumbuh</small>
         </div>
-        <div class="flex items-center justify-between text-sm">
-            <label class="flex items-center gap-2">
-                <input type="checkbox" name="remember"> Ingat saya
-            </label>
-        </div>
-        <button type="submit" class="w-full bg-primary hover:bg-primary-dark text-white font-semibold py-2.5 rounded-md transition">
-            Masuk
-        </button>
-    </form>
+    </aside>
 
-    <p class="text-center text-sm text-gray-500 mt-6">
-        Belum punya akun (konsumen)?
-        <a href="{{ route('register') }}" class="text-primary-dark font-semibold hover:underline">Daftar di sini</a>
-    </p>
+    <section class="auth-card">
+        <div class="auth-card__header">
+            <span class="auth-card__eyebrow">Akun pelanggan</span>
+            <h2 class="auth-card__title">Masuk ke akun Anda</h2>
+            <p class="auth-card__description">Gunakan email dan kata sandi yang terdaftar untuk melanjutkan.</p>
+        </div>
 
-    <div class="mt-6 bg-accent-light/60 rounded-md p-3 text-xs text-gray-600">
-        <strong>Akun contoh (hasil seeder):</strong><br>
-        Konsumen: konsumen@benih.test / password<br>
-        Petugas Layanan: layanan@benih.test / password<br>
-        Petugas PNBP: pnbp@benih.test / password<br>
-        Manager/Gudang: gudang@benih.test / password
-    </div>
+        <form method="POST" action="{{ route('login') }}" class="auth-form">
+            @csrf
+            <div>
+                <label class="form-label" for="login-email">Email</label>
+                <input id="login-email" class="form-input" type="email" name="email" value="{{ old('email') }}" required autofocus autocomplete="email" placeholder="nama@email.com">
+                @error('email')
+                    <p class="form-error">{{ $message }}</p>
+                @enderror
+            </div>
+            <div>
+                <label class="form-label" for="login-password">Kata sandi</label>
+                <input id="login-password" class="form-input" type="password" name="password" required autocomplete="current-password" placeholder="Masukkan kata sandi">
+                @error('password')
+                    <p class="form-error">{{ $message }}</p>
+                @enderror
+            </div>
+            <div class="auth-form__row">
+                <label class="check-label"><input type="checkbox" name="remember" value="1"> Ingat saya</label>
+                <span>Butuh bantuan? Hubungi petugas.</span>
+            </div>
+            <button class="btn btn--primary w-full" type="submit">
+                Masuk ke akun
+                <x-customer.icon name="arrow-right" :size="16"></x-customer.icon>
+            </button>
+        </form>
+
+        <p class="auth-footer">Belum punya akun pelanggan? <a href="{{ route('register') }}">Daftar sekarang</a></p>
+
+        @if (app()->environment('local'))
+            <div class="credential-note">
+                <strong>Akun demo lokal:</strong><br>
+                Konsumen: konsumen@benih.test / password<br>
+                Petugas Layanan: layanan@benih.test / password<br>
+                Petugas Gudang: gudang@benih.test / password
+            </div>
+        @endif
+    </section>
 </div>
 @endsection

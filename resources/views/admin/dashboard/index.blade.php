@@ -36,23 +36,28 @@
     </div>
 @endif
 
-@if(isset($recentBills))
+@if(isset($ordersWaitingBilling))
     <div class="bg-white rounded-xl shadow-sm border border-gray-100 overflow-x-auto">
-        <div class="px-5 py-3 font-semibold border-b">Tagihan PNBP Terbaru</div>
+        <div class="px-5 py-3 font-semibold border-b flex items-center justify-between">
+            <span>Pesanan Menunggu Billing</span>
+            <a href="{{ route('admin.orders.index', ['status' => 'diproses']) }}" class="text-xs text-primary-dark font-semibold hover:underline">Lihat semua →</a>
+        </div>
         <table class="w-full text-sm">
             <thead class="bg-base text-gray-500 text-left">
-                <tr><th class="px-4 py-3">No. Tagihan</th><th class="px-4 py-3">Konsumen</th><th class="px-4 py-3">Jumlah</th><th class="px-4 py-3">Status</th></tr>
+                <tr><th class="px-4 py-3">No. Pesanan</th><th class="px-4 py-3">Konsumen</th><th class="px-4 py-3">Total</th><th class="px-4 py-3"></th></tr>
             </thead>
             <tbody class="divide-y">
-                @forelse($recentBills as $bill)
+                @forelse($ordersWaitingBilling as $order)
                 <tr>
-                    <td class="px-4 py-3 font-medium">{{ $bill->bill_number }}</td>
-                    <td class="px-4 py-3">{{ $bill->order->user->name }}</td>
-                    <td class="px-4 py-3">{{ $bill->formattedAmount() }}</td>
-                    <td class="px-4 py-3">{{ \App\Models\PnbpBill::statusLabel($bill->status) }}</td>
+                    <td class="px-4 py-3 font-medium">{{ $order->order_number }}</td>
+                    <td class="px-4 py-3">{{ $order->user->name }}</td>
+                    <td class="px-4 py-3">{{ $order->formattedTotal() }}</td>
+                    <td class="px-4 py-3 text-right">
+                        <a href="{{ route('admin.orders.show', $order) }}" class="text-primary-dark hover:underline">Terbitkan billing</a>
+                    </td>
                 </tr>
                 @empty
-                <tr><td colspan="4" class="px-4 py-6 text-center text-gray-400">Belum ada tagihan.</td></tr>
+                <tr><td colspan="4" class="px-4 py-6 text-center text-gray-400">Tidak ada pesanan yang menunggu billing.</td></tr>
                 @endforelse
             </tbody>
         </table>
