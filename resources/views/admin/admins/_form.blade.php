@@ -105,7 +105,7 @@
         </label>
     </div>
 
-    @if ($isEdit)
+    @if (in_array($mode, ['create', 'edit']))
         <div class="border-t pt-4">
             <h3 class="font-semibold text-primary-dark mb-1">Konfirmasi Super Admin</h3>
             <p class="text-xs text-gray-500 mb-3">
