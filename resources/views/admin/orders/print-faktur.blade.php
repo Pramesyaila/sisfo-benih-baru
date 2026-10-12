@@ -34,7 +34,7 @@
         <div class="text-right">
             <p class="font-bold uppercase">Faktur</p>
             <p class="text-xs mt-0.5">No. {{ $invoice->invoice_number }}</p>
-            <p class="text-xs">{{ $invoice->created_at->format('d M Y') }}</p>
+            <p class="text-xs">{{ $invoice->created_at->translatedFormat('d M Y') }}</p>
         </div>
     </div>
 
@@ -47,7 +47,7 @@
         </div>
         <div class="text-xs space-y-1">
             <p><span class="text-gray-600">Nomor Pesanan:</span> {{ $order->order_number }}</p>
-            <p><span class="text-gray-600">Tanggal Pengambilan:</span> {{ optional($invoice->pickup_date)->format('d M Y') ?: '-' }}</p>
+            <p><span class="text-gray-600">Tanggal Pengambilan:</span> {{ optional($invoice->pickup_date)->translatedFormat('d M Y') ?: '-' }}</p>
             <p><span class="text-gray-600">Lokasi Pengambilan:</span> {{ $invoice->pickupLocationLabel() }}</p>
         </div>
     </div>
@@ -102,7 +102,7 @@
         </div>
     </div>
 
-    <p class="mt-8 text-xs text-gray-700">Diterbitkan di: {{ $docLocation }}, {{ now()->format('d F Y') }}</p>
+    <p class="mt-8 text-xs text-gray-700">Diterbitkan di: {{ $docLocation }}, {{ now()->translatedFormat('d F Y') }}</p>
 </div>
 </body>
 </html>
