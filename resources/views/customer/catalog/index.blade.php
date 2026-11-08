@@ -76,7 +76,7 @@
 </section>
 
 {{--
-  Filter kategori/varietas memakai tautan biasa, namun POSIX scroll restoration
+  Filter kategori/varietas/kelas memakai tautan biasa, namun POSIX scroll restoration
   menjaga posisi gulir sehingga halaman tidak kembali ke paling atas.
 --}}
 <section id="daftar-produk" class="catalog-anchor">
@@ -91,12 +91,12 @@
 
     <nav class="filter-list" aria-label="Filter kategori">
         <a class="filter-link {{ ! $selectedCategory ? 'filter-link--active' : '' }}"
-           href="{{ route('catalog.index', array_merge(request()->except(['category', 'variety', 'page']), [])) }}">
+           href="{{ route('catalog.index', array_merge(request()->except(['category', 'variety', 'grade', 'page']), [])) }}">
             Semua produk
         </a>
         @foreach ($categories as $category)
             <a class="filter-link {{ $selectedCategory === $category->slug ? 'filter-link--active' : '' }}"
-               href="{{ route('catalog.index', array_merge(request()->except(['variety', 'page']), ['category' => $category->slug])) }}">
+               href="{{ route('catalog.index', array_merge(request()->except(['variety', 'grade', 'page']), ['category' => $category->slug])) }}">
                 {{ $category->name }}
             </a>
         @endforeach
@@ -111,13 +111,35 @@
     @if ($activeCategory && $activeCategory->children->isNotEmpty())
         <nav class="filter-list filter-list--sub" aria-label="Filter varietas">
             <a class="filter-link {{ ! $selectedVariety ? 'filter-link--active' : '' }}"
-               href="{{ route('catalog.index', array_merge(request()->except(['variety', 'page']), ['category' => $selectedCategory])) }}">
+               href="{{ route('catalog.index', array_merge(request()->except(['variety', 'grade', 'page']), ['category' => $selectedCategory])) }}">
                 Semua {{ $activeCategory->name }}
             </a>
             @foreach ($activeCategory->children as $child)
                 <a class="filter-link {{ $selectedVariety === $child->slug ? 'filter-link--active' : '' }}"
-                   href="{{ route('catalog.index', array_merge(request()->except('page'), ['category' => $selectedCategory, 'variety' => $child->slug])) }}">
+                   href="{{ route('catalog.index', array_merge(request()->except(['grade', 'page']), ['category' => $selectedCategory, 'variety' => $child->slug])) }}">
                     {{ $child->name }}
+                </a>
+            @endforeach
+        </nav>
+    @endif
+
+    {{-- Kelas (level 3): hanya tampil bila varietas terpilih punya kelas (Ayam KUB). --}}
+    @php
+        $activeVariety = $activeCategory && $selectedVariety
+            ? $activeCategory->children->firstWhere('slug', $selectedVariety)
+            : null;
+    @endphp
+
+    @if ($activeVariety && $activeVariety->children->isNotEmpty())
+        <nav class="filter-list filter-list--sub" aria-label="Filter kelas">
+            <a class="filter-link {{ ! $selectedGrade ? 'filter-link--active' : '' }}"
+               href="{{ route('catalog.index', array_merge(request()->except(['grade', 'page']), ['category' => $selectedCategory, 'variety' => $selectedVariety])) }}">
+                Semua {{ $activeVariety->name }}
+            </a>
+            @foreach ($activeVariety->children as $grade)
+                <a class="filter-link {{ $selectedGrade === $grade->slug ? 'filter-link--active' : '' }}"
+                   href="{{ route('catalog.index', array_merge(request()->except('page'), ['category' => $selectedCategory, 'variety' => $selectedVariety, 'grade' => $grade->slug])) }}">
+                    {{ $grade->name }}
                 </a>
             @endforeach
         </nav>
@@ -171,7 +193,7 @@
 </div>
 
 <script>
-    // Memilih kategori/varietas adalah navigasi halaman penuh. Tanpa penanganan
+    // Memilih kategori/varietas/kelas adalah navigasi halaman penuh. Tanpa penanganan
     // tambahan, browser mengembalikan posisi gulir ke paling atas sehingga
     // pengguna kehilangan tempat ia berada di daftar produk.
     //
@@ -222,7 +244,7 @@
 
                 if (anchor) {
                     var offset = anchor.getBoundingClientRect().top + window.scrollY - 90;
-                    // Bila daftar produk became lebih pendek, jaga agar tidak keluar jalur.
+                    // Bila daftar produk menjadi lebih pendek, jaga agar tidak keluar jalur.
                     window.scrollTo(0, Math.min(savedY, Math.max(0, offset + savedY)));
                 }
 

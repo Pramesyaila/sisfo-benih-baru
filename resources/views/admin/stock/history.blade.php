@@ -3,13 +3,13 @@
 @section('title', 'Riwayat Stok')
 
 @section('content')
-<form method="GET" class="mb-4 flex flex-wrap gap-2 items-end bg-white p-4 rounded-xl border border-gray-100">
+<form method="GET" id="stock-filter" class="mb-4 flex flex-wrap gap-2 items-end bg-white p-4 rounded-xl border border-gray-100">
     <div>
         <label class="block text-xs text-gray-500 mb-1">Kategori</label>
         <select name="category" class="rounded-md border-gray-300 px-3 py-2 border text-sm">
             <option value="">Semua</option>
             @foreach($categories as $cat)
-                <option value="{{ $cat->id }}" @selected(request('category') == $cat->id)>{{ $cat->name }}</option>
+                <option value="{{ $cat->id }}" data-graded="{{ $cat->isGradedRoot() ? '1' : '0' }}" @selected(request('category') == $cat->id)>{{ $cat->name }}</option>
             @endforeach
         </select>
     </div>
@@ -19,8 +19,23 @@
             <option value="">Semua</option>
             @foreach($categories as $cat)
                 @foreach($cat->children as $child)
-                    <option value="{{ $child->id }}" @selected(request('variety') == $child->id)>{{ $cat->name }} &rsaquo; {{ $child->name }}</option>
+                    <option value="{{ $child->id }}" data-parent="{{ $cat->id }}" @selected(request('variety') == $child->id)>{{ $cat->name }} &rsaquo; {{ $child->name }}</option>
                 @endforeach
+            @endforeach
+        </select>
+    </div>
+    <div data-grade-wrap>
+        <label class="block text-xs text-gray-500 mb-1">Kelas</label>
+        <select name="grade" class="rounded-md border-gray-300 px-3 py-2 border text-sm">
+            <option value="">Semua</option>
+            @foreach($categories as $cat)
+                @if ($cat->isGradedRoot())
+                    @foreach($cat->children as $child)
+                        @foreach($child->children as $grade)
+                            <option value="{{ $grade->id }}" data-parent="{{ $child->id }}" @selected(request('grade') == $grade->id)>{{ $child->name }} &rsaquo; {{ $grade->name }}</option>
+                        @endforeach
+                    @endforeach
+                @endif
             @endforeach
         </select>
     </div>
@@ -29,7 +44,7 @@
         <select name="product_id" class="rounded-md border-gray-300 px-3 py-2 border text-sm">
             <option value="">Semua</option>
             @foreach($products as $p)
-                <option value="{{ $p->id }}" @selected(request('product_id') == $p->id)>{{ $p->name }}</option>
+                <option value="{{ $p->id }}" @selected(request('product_id') == $p->id)>{{ $p->name }}@if ($p->category) ({{ str_replace(' → ', ' › ', $p->category->full_path) }})@endif</option>
             @endforeach
         </select>
     </div>
@@ -72,11 +87,7 @@
                 <td class="px-4 py-3">{{ $t->created_at->format('d/m/Y H:i') }}</td>
                 <td class="px-4 py-3 font-medium">{{ $t->product->name ?? '-' }}</td>
                 <td class="px-4 py-3 text-gray-500">
-                    {{ optional(optional($t->product)->category?->parent)->name }}
-                    @if (optional($t->product)->category?->parent)
-                        &rsaquo;
-                    @endif
-                    {{ optional(optional($t->product)->category)->name }}
+                    {{ str_replace(' → ', ' › ', $t->product?->category?->full_path ?? '-') }}
                 </td>
                 <td class="px-4 py-3">
                     <span class="badge {{ $t->type === 'masuk' ? 'bg-primary text-white' : 'bg-accent text-primary-dark' }}">{{ ucfirst($t->type) }}</span>
@@ -93,4 +104,5 @@
     </table>
 </div>
 <div class="mt-4">{{ $transactions->links() }}</div>
+@include('admin.stock._cascade-filter')
 @endsection

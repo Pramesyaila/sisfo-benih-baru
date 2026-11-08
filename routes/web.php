@@ -111,12 +111,19 @@ Route::prefix('admin')
         Route::get('/pesanan/{order}', [AdminOrderController::class, 'show'])->name('orders.show');
         Route::get('/pesanan/{order}/cetak/faktur', [InvoiceController::class, 'show'])->name('orders.invoice.show');
 
-        // Petugas Gudang: produk, kategori/varietas, stok, dan pengambilan.
+        // Petugas Gudang: produk, kategori/varietas/kelas, stok, dan pengambilan.
         Route::middleware('role:petugas_gudang')->group(function () {
             Route::resource('categories', CategoryController::class)->except(['show', 'create']);
+
+            // Varietas (level 2)
             Route::post('/categories/{category}/subcategories', [CategoryController::class, 'storeSubcategory'])->name('subcategories.store');
             Route::patch('/subcategories/{subcategory}', [CategoryController::class, 'updateSubcategory'])->name('subcategories.update');
             Route::delete('/subcategories/{subcategory}', [CategoryController::class, 'destroySubcategory'])->name('subcategories.destroy');
+
+            // Kelas (level 3, khusus Ayam KUB)
+            Route::post('/subcategories/{subcategory}/grades', [CategoryController::class, 'storeGrade'])->name('grades.store');
+            Route::patch('/grades/{grade}', [CategoryController::class, 'updateGrade'])->name('grades.update');
+            Route::delete('/grades/{grade}', [CategoryController::class, 'destroyGrade'])->name('grades.destroy');
 
             Route::resource('products', ProductController::class)->except(['show']);
 

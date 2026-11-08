@@ -1,19 +1,29 @@
 <div>
-    <label class="block text-sm font-medium mb-1">Kategori / Varietas</label>
+    <label class="block text-sm font-medium mb-1">Kategori / Varietas / Kelas</label>
+    @php($selectedCategoryId = old('category_id', $product->category_id ?? null))
     <select name="category_id" required class="w-full rounded-md border-gray-300 focus:border-primary focus:ring-primary px-3 py-2 border text-sm">
+        <option value="">-- Pilih kategori --</option>
         @foreach($categories as $cat)
             <optgroup label="{{ $cat->name }}">
                 @if ($cat->children->isEmpty())
-                    <option value="{{ $cat->id }}" @selected(old('category_id', $product->category_id ?? null) == $cat->id)>{{ $cat->name }} (tanpa varietas)</option>
+                    <option value="{{ $cat->id }}" @selected($selectedCategoryId == $cat->id)>{{ $cat->name }} (tanpa varietas)</option>
                 @else
                     @foreach ($cat->children as $child)
-                        <option value="{{ $child->id }}" @selected(old('category_id', $product->category_id ?? null) == $child->id)>{{ $cat->name }} &rsaquo; {{ $child->name }}</option>
+                        @if ($child->children->isEmpty())
+                            {{-- Varietas tanpa kelas (Padi, Hortikultura, dst.) --}}
+                            <option value="{{ $child->id }}" @selected($selectedCategoryId == $child->id)>{{ $cat->name }} &rsaquo; {{ $child->name }}</option>
+                        @else
+                            {{-- Varietas dengan kelas (Ayam KUB): yang dipilih adalah kelasnya --}}
+                            @foreach ($child->children as $grade)
+                                <option value="{{ $grade->id }}" @selected($selectedCategoryId == $grade->id)>{{ $cat->name }} &rsaquo; {{ $child->name }} &rsaquo; {{ $grade->name }}</option>
+                            @endforeach
+                        @endif
                     @endforeach
                 @endif
             </optgroup>
         @endforeach
     </select>
-    <p class="text-xs text-gray-400 mt-1">Pilih kategori anak (varietas) agar konsumen dapat memfilternya.</p>
+    <p class="text-xs text-gray-400 mt-1">Pilih kategori paling ujung. Untuk Ayam KUB, pilih kelasnya (mis. Grade A) agar konsumen dapat memfilternya.</p>
 </div>
 <div>
     <label class="block text-sm font-medium mb-1">Nama Produk</label>

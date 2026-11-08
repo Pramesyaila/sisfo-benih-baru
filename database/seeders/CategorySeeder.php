@@ -10,6 +10,12 @@ class CategorySeeder extends Seeder
 {
     public function run(): void
     {
+        $grades = [
+            'Grade A' => 'Kelas A (kualitas terbaik).',
+            'Grade B' => 'Kelas B (kualitas menengah).',
+            'Grade C' => 'Kelas C (kualitas standar).',
+        ];
+
         $tree = [
             'Padi' => [
                 'description' => 'Benih padi berbagai varietas unggul.',
@@ -29,23 +35,52 @@ class CategorySeeder extends Seeder
             'Ayam KUB' => [
                 'description' => 'Bibit dan telur Kampung Unggul Balitbangtan.',
                 'children' => [
-                    'Bibit Ayam' => 'Bibit ayam KUB.',
-                    'Telur Tetas' => 'Telur tetas ayam KUB.',
+                    'Bibit Ayam' => [
+                        'description' => 'Bibit ayam KUB.',
+                        'children' => $grades,
+                    ],
+                    'Telur Tetas' => [
+                        'description' => 'Telur tetas ayam KUB.',
+                        'children' => $grades,
+                    ],
                 ],
             ],
         ];
 
-        foreach ($tree as $name => $definition) {
+        $this->seedLevel($tree, null);
+    }
+
+    /**
+     * Seed satu level pohon secara rekursif.
+     *
+     * Slug:
+     *  - level 1 & 2 : slug nama (sama seperti sebelumnya, tidak menduplikasi data lama)
+     *  - level 3     : slug nama induk + nama kelas, agar "Grade A" di tiap
+     *                  varietas tidak saling menimpa (mis. bibit-ayam-grade-a).
+     *
+     * @param  array<string, array|string>  $nodes
+     */
+    private function seedLevel(array $nodes, ?Category $parent, string $slugPrefix = ''): void
+    {
+        foreach ($nodes as $name => $definition) {
+            if (! is_array($definition)) {
+                $definition = ['description' => $definition, 'children' => []];
+            }
+
             $category = Category::updateOrCreate(
-                ['slug' => Str::slug($name)],
-                ['name' => $name, 'parent_id' => null, 'description' => $definition['description']]
+                ['slug' => Str::slug(trim($slugPrefix . ' ' . $name))],
+                [
+                    'name' => $name,
+                    'parent_id' => $parent?->id,
+                    'description' => $definition['description'] ?? null,
+                ]
             );
 
-            foreach ($definition['children'] as $childName => $childDescription) {
-                Category::updateOrCreate(
-                    ['slug' => Str::slug($childName)],
-                    ['name' => $childName, 'parent_id' => $category->id, 'description' => $childDescription]
-                );
+            if (! empty($definition['children'])) {
+                // Anak dari root memakai slug polos; anak dari varietas diberi prefix nama varietas.
+                $childPrefix = $parent === null ? '' : $name;
+
+                $this->seedLevel($definition['children'], $category, $childPrefix);
             }
         }
     }

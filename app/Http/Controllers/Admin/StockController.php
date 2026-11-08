@@ -17,10 +17,11 @@ class StockController extends Controller
     {
         $categories = $this->categoryTree();
 
-        $products = Product::with(['category.parent'])
+        $products = Product::with(['category.parent.parent'])
             ->when($request->filled('q'), fn ($query) => $query->where('name', 'like', '%' . $request->q . '%'))
-            ->when($request->filled('category'), fn ($query) => $query->whereHas('category', fn ($category) => $category->where('id', $request->category)->orWhereHas('parent', fn ($parent) => $parent->where('id', $request->category))))
-            ->when($request->filled('variety'), fn ($query) => $query->whereHas('category', fn ($category) => $category->where('id', $request->variety)))
+            ->when($request->filled('category'), fn ($query) => $query->whereIn('category_id', $this->categoryIds($request->category)))
+            ->when($request->filled('variety'), fn ($query) => $query->whereIn('category_id', $this->categoryIds($request->variety)))
+            ->when($request->filled('grade'), fn ($query) => $query->where('category_id', $request->grade))
             ->orderBy('name')
             ->paginate(10)
             ->withQueryString();
@@ -30,10 +31,11 @@ class StockController extends Controller
 
     public function history(Request $request)
     {
-        $transactions = StockTransaction::with(['product.category.parent', 'user'])
+        $transactions = StockTransaction::with(['product.category.parent.parent', 'user'])
             ->when($request->filled('product_id'), fn ($query) => $query->where('product_id', $request->product_id))
-            ->when($request->filled('category'), fn ($query) => $query->whereHas('product', fn ($product) => $product->whereHas('category', fn ($category) => $category->where('id', $request->category)->orWhereHas('parent', fn ($parent) => $parent->where('id', $request->category)))))
-            ->when($request->filled('variety'), fn ($query) => $query->whereHas('product', fn ($product) => $product->whereHas('category', fn ($category) => $category->where('id', $request->variety))))
+            ->when($request->filled('category'), fn ($query) => $query->whereHas('product', fn ($product) => $product->whereIn('category_id', $this->categoryIds($request->category))))
+            ->when($request->filled('variety'), fn ($query) => $query->whereHas('product', fn ($product) => $product->whereIn('category_id', $this->categoryIds($request->variety))))
+            ->when($request->filled('grade'), fn ($query) => $query->whereHas('product', fn ($product) => $product->where('category_id', $request->grade)))
             ->when($request->filled('type'), fn ($query) => $query->where('type', $request->type))
             ->when($request->filled('from'), fn ($query) => $query->whereDate('created_at', '>=', $request->from))
             ->when($request->filled('to'), fn ($query) => $query->whereDate('created_at', '<=', $request->to))
@@ -43,7 +45,7 @@ class StockController extends Controller
 
         return view('admin.stock.history', [
             'transactions' => $transactions,
-            'products' => Product::with('category')->orderBy('name')->get(),
+            'products' => Product::with('category.parent.parent')->orderBy('name')->get(),
             'categories' => $this->categoryTree(),
         ]);
     }
@@ -114,6 +116,24 @@ class StockController extends Controller
 
     protected function categoryTree()
     {
-        return Category::whereNull('parent_id')->with('children')->orderBy('name')->get();
+        return Category::whereNull('parent_id')
+            ->with('children.children')
+            ->orderBy('name')
+            ->get();
+    }
+
+    /**
+     * ID kategori beserta seluruh turunannya, dipakai untuk filter.
+     * Id tidak dikenal menghasilkan array kosong (tidak ada produk cocok).
+     *
+     * @return array<int>
+     */
+    protected function categoryIds(mixed $id): array
+    {
+        if (blank($id)) {
+            return [];
+        }
+
+        return Category::find($id)?->descendantsAndSelfIds() ?? [];
     }
 }

@@ -11,51 +11,44 @@ use Illuminate\Http\Request;
 class CatalogController extends Controller
 {
     public function index(Request $request)
-    {
-        $categories = Category::whereNull('parent_id')->with('children')->orderBy('name')->get();
+{
+    $categories = Category::whereNull('parent_id')
+        ->with('children.children')
+        ->orderBy('name')
+        ->get();
 
-        $selectedCategory = $request->string('category')->toString();
-        $selectedVariety = $request->string('variety')->toString();
-        $keyword = $request->string('q')->toString();
+    $selectedCategory = $request->string('category')->toString();
+    $selectedVariety = $request->string('variety')->toString();
+    $selectedGrade = $request->string('grade')->toString();
+    $keyword = $request->string('q')->toString();
 
-        $products = Product::with(['category.parent'])
-            ->where('status', 'aktif')
-            ->when($selectedVariety !== '', function ($query) use ($selectedVariety, $selectedCategory) {
-                $query->whereHas('category', function ($categoryQuery) use ($selectedVariety, $selectedCategory) {
-                    $categoryQuery->where('slug', $selectedVariety)
-                        ->when(
-                            $selectedCategory !== '',
-                            fn ($parentQuery) => $parentQuery->whereHas('parent', fn ($parent) => $parent->where('slug', $selectedCategory))
-                        );
-                });
-            })
-            ->when($selectedVariety === '' && $selectedCategory !== '', function ($query) use ($selectedCategory) {
-                // Kategori tanpa varietas tetap ikut tampil saat kategori induknya dipilih.
-                $query->whereHas('category', function ($categoryQuery) use ($selectedCategory) {
-                    $categoryQuery->where('slug', $selectedCategory)
-                        ->orWhereHas('parent', fn ($parent) => $parent->where('slug', $selectedCategory));
-                });
-            })
-            ->when($keyword !== '', fn ($query) => $query->where('name', 'like', '%' . $keyword . '%'))
-            ->orderBy('name')
-            ->paginate(9)
-            ->withQueryString();
+    $categoryIds = $this->resolveCategoryIds($selectedCategory, $selectedVariety, $selectedGrade);
 
-        return view('customer.catalog.index', [
-            'categories' => $categories,
-            'products' => $products,
-            'selectedCategory' => $selectedCategory,
-            'selectedVariety' => $selectedVariety,
-            'keyword' => $keyword,
-            'landing' => LandingContent::current(),
-        ]);
-    }
+    $products = Product::with(['category.parent.parent'])
+        ->where('status', 'aktif')
+        // null = tanpa filter kategori; array kosong = tidak ada yang cocok.
+        ->when($categoryIds !== null, fn ($query) => $query->whereIn('category_id', $categoryIds))
+        ->when($keyword !== '', fn ($query) => $query->where('name', 'like', '%' . $keyword . '%'))
+        ->orderBy('name')
+        ->paginate(9)
+        ->withQueryString();
+
+    return view('customer.catalog.index', [
+        'categories' => $categories,
+        'products' => $products,
+        'selectedCategory' => $selectedCategory,
+        'selectedVariety' => $selectedVariety,
+        'selectedGrade' => $selectedGrade,
+        'keyword' => $keyword,
+        'landing' => LandingContent::current(),
+    ]);
+}
 
     public function show(Product $product)
     {
         abort_unless($product->status === 'aktif', 404);
 
-        $product->load('category.parent');
+        $product->load('category.parent.parent');
 
         $related = Product::with('category')
             ->where('category_id', $product->category_id)
@@ -66,4 +59,44 @@ class CatalogController extends Controller
 
         return view('customer.catalog.show', compact('product', 'related'));
     }
+
+    protected function resolveCategoryIds(string $categorySlug, string $varietySlug, string $gradeSlug = ''): ?array
+{
+    // Kelas dipilih: hanya produk di kelas itu, dan harus berada di bawah varietas yang dipilih.
+    if ($gradeSlug !== '') {
+        $grade = Category::where('slug', $gradeSlug)->first();
+
+        if (! $grade || ! $grade->parent) {
+            return [];
+        }
+
+        if ($varietySlug !== '' && $grade->parent->slug !== $varietySlug) {
+            return [];
+        }
+
+        return [$grade->id];
+    }
+
+    if ($varietySlug !== '') {
+        $variety = Category::where('slug', $varietySlug)->first();
+
+        if (! $variety) {
+            return [];
+        }
+
+        if ($categorySlug !== '' && $variety->root()->slug !== $categorySlug) {
+            return [];
+        }
+
+        return $variety->descendantsAndSelfIds();
+    }
+
+    if ($categorySlug !== '') {
+        $category = Category::where('slug', $categorySlug)->first();
+
+        return $category ? $category->descendantsAndSelfIds() : [];
+    }
+
+    return null;
+}
 }
