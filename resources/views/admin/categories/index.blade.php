@@ -15,7 +15,7 @@
                         @endif
                     </div>
                     <div class="flex items-center gap-3 text-xs text-gray-500 whitespace-nowrap">
-                        <span>{{ $category->products_count }} produk</span>
+                        <span>{{ $category->products_total }} produk</span>
                         <a href="{{ route('admin.categories.edit', $category) }}" class="text-primary-dark font-semibold hover:underline">Edit</a>
                         @include('partials.confirm-form', [
                             'action' => route('admin.categories.destroy', $category),
@@ -44,7 +44,7 @@
                                             <button class="text-xs text-primary-dark font-semibold hover:underline">Simpan</button>
                                         </form>
                                     </td>
-                                    <td class="px-4 py-2 text-gray-500">{{ $child->products_count }}</td>
+                                    <td class="px-4 py-2 text-gray-500">{{ $child->products_total }}</td>
                                     <td class="px-4 py-2 text-right">
                                         @include('partials.confirm-form', [
                                                 'action' => route('admin.subcategories.destroy', $child),
@@ -57,6 +57,45 @@
                                             ])
                                     </td>
                                 </tr>
+
+                                {{-- Kelas (level 3): hanya untuk kategori Ayam KUB --}}
+                                @if ($category->isGradedRoot())
+                                    <tr class="bg-gray-50">
+                                        <td colspan="3" class="px-4 py-3">
+                                            <p class="text-xs font-semibold text-gray-500 mb-2">Kelas {{ $child->name }}</p>
+
+                                            <div class="space-y-2 pl-4 border-l-2 border-gray-200">
+                                                @forelse ($child->children as $grade)
+                                                    <div class="flex items-center gap-3">
+                                                        <form action="{{ route('admin.grades.update', $grade) }}" method="POST" class="flex flex-1 items-center gap-2">
+                                                            @csrf @method('PATCH')
+                                                            <input type="text" name="name" value="{{ $grade->name }}" required class="flex-1 rounded-md border-gray-300 px-2 py-1 text-sm">
+                                                            <button class="text-xs text-primary-dark font-semibold hover:underline">Simpan</button>
+                                                        </form>
+                                                        <span class="text-xs text-gray-500 whitespace-nowrap">{{ $grade->products_count }} produk</span>
+                                                        @include('partials.confirm-form', [
+                                                            'action' => route('admin.grades.destroy', $grade),
+                                                            'method' => 'DELETE',
+                                                            'label' => 'Hapus',
+                                                            'title' => 'Hapus kelas',
+                                                            'message' => 'Hapus kelas ' . $grade->name . ' dari ' . $child->name . '?',
+                                                            'confirmLabel' => 'Ya, Hapus',
+                                                            'buttonClass' => 'text-red-500 text-xs hover:underline',
+                                                        ])
+                                                    </div>
+                                                @empty
+                                                    <p class="text-xs text-gray-400">Belum ada kelas.</p>
+                                                @endforelse
+
+                                                <form action="{{ route('admin.grades.store', $child) }}" method="POST" class="flex items-center gap-2 pt-1">
+                                                    @csrf
+                                                    <input type="text" name="name" placeholder="Tambah kelas, mis. Grade A" required class="flex-1 rounded-md border-gray-300 px-3 py-1.5 text-sm">
+                                                    <button class="bg-primary text-white px-3 py-1.5 rounded-md text-xs font-semibold hover:bg-primary-dark">Tambah Kelas</button>
+                                                </form>
+                                            </div>
+                                        </td>
+                                    </tr>
+                                @endif
                             @endforeach
                         </tbody>
                     </table>
@@ -92,7 +131,10 @@
             </div>
             <button class="w-full bg-primary text-white px-4 py-2 rounded-md text-sm font-semibold hover:bg-primary-dark">Simpan Kategori</button>
         </form>
-        <p class="mt-4 text-xs text-gray-400 leading-relaxed">Produk disimpan pada kategori anak (varietas). Contoh: Padi → Padi Sawah → Inpari 32.</p>
+        <p class="mt-4 text-xs text-gray-400 leading-relaxed">
+            Produk disimpan pada kategori paling ujung. Contoh: Padi → Padi Sawah → Inpari 32.
+            Khusus Ayam KUB, produk disimpan pada kelas: Ayam KUB → Bibit Ayam → Grade A.
+        </p>
     </div>
 </div>
 @endsection

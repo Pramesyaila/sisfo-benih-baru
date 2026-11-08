@@ -3,22 +3,36 @@
 @section('title', 'Stok Masuk / Keluar')
 
 @section('content')
-<form method="GET" class="mb-4 flex flex-wrap gap-2">
+<form method="GET" id="stock-filter" class="mb-4 flex flex-wrap gap-2">
     <input type="text" name="q" value="{{ request('q') }}" placeholder="Cari produk..." class="rounded-md border-gray-300 px-3 py-2 border text-sm">
     <select name="category" class="rounded-md border-gray-300 px-3 py-2 border text-sm">
         <option value="">Semua Kategori</option>
         @foreach($categories as $cat)
-            <option value="{{ $cat->id }}" @selected(request('category') == $cat->id)>{{ $cat->name }}</option>
+            <option value="{{ $cat->id }}" data-graded="{{ $cat->isGradedRoot() ? '1' : '0' }}" @selected(request('category') == $cat->id)>{{ $cat->name }}</option>
         @endforeach
     </select>
     <select name="variety" class="rounded-md border-gray-300 px-3 py-2 border text-sm">
         <option value="">Semua Varietas</option>
         @foreach($categories as $cat)
             @foreach($cat->children as $child)
-                <option value="{{ $child->id }}" @selected(request('variety') == $child->id)>{{ $cat->name }} &rsaquo; {{ $child->name }}</option>
+                <option value="{{ $child->id }}" data-parent="{{ $cat->id }}" @selected(request('variety') == $child->id)>{{ $cat->name }} &rsaquo; {{ $child->name }}</option>
             @endforeach
         @endforeach
     </select>
+    <div data-grade-wrap>
+        <select name="grade" class="rounded-md border-gray-300 px-3 py-2 border text-sm">
+            <option value="">Semua Kelas</option>
+            @foreach($categories as $cat)
+                @if ($cat->isGradedRoot())
+                    @foreach($cat->children as $child)
+                        @foreach($child->children as $grade)
+                            <option value="{{ $grade->id }}" data-parent="{{ $child->id }}" @selected(request('grade') == $grade->id)>{{ $child->name }} &rsaquo; {{ $grade->name }}</option>
+                        @endforeach
+                    @endforeach
+                @endif
+            @endforeach
+        </select>
+    </div>
     <button class="bg-base border border-gray-200 px-3 py-2 rounded-md text-sm hover:border-primary">Filter</button>
     <a href="{{ route('admin.stock.history') }}" class="ml-auto bg-primary text-white px-4 py-2 rounded-md text-sm hover:bg-primary-dark">Lihat Riwayat Stok &rarr;</a>
 </form>
@@ -38,11 +52,7 @@
             <tr>
                 <td class="px-4 py-3 font-medium">{{ $product->name }}</td>
                 <td class="px-4 py-3 text-gray-500">
-                    {{ optional($product->category->parent)->name }}
-                    @if ($product->category->parent)
-                        &rsaquo;
-                    @endif
-                    {{ $product->category->name }}
+                    {{ str_replace(' → ', ' › ', $product->category?->full_path ?? '-') }}
                 </td>
                 <td class="px-4 py-3 {{ $product->isLowStock() ? 'text-accent font-semibold' : '' }}">{{ $product->stock }} {{ $product->packaging_unit }}</td>
                 <td class="px-4 py-3 text-right">
@@ -65,6 +75,9 @@
                 <div>
                     <h3 class="text-lg font-bold text-primary-dark">Pencatatan Stok</h3>
                     <p class="text-xs text-gray-500 mt-1">{{ $product->name }} &middot; stok saat ini {{ $product->stock }} {{ $product->packaging_unit }}</p>
+                    @if ($product->category)
+                        <p class="text-xs text-gray-400 mt-0.5">{{ str_replace(' → ', ' › ', $product->category->full_path) }}</p>
+                    @endif
                 </div>
                 <button type="button" class="text-gray-400" data-modal-close="stock-modal-{{ $product->id }}">✕</button>
             </div>
@@ -76,7 +89,7 @@
                 </div>
                 <div>
                     <label class="block text-sm font-medium mb-1">Berita Acara / Deskripsi</label>
-                    <textarea name="note" rows="3" required placeholder="Contoh: stok bertambah dariereum produksi 2026, atau berkurang karena kerusakan di gudang." class="w-full rounded-md border-gray-300 px-3 py-2 border text-sm"></textarea>
+                    <textarea name="note" rows="3" required placeholder="Contoh: stok bertambah dari produksi 2026, atau berkurang karena kerusakan di gudang." class="w-full rounded-md border-gray-300 px-3 py-2 border text-sm"></textarea>
                     <p class="text-xs text-gray-400 mt-1">Wajib diisi sebagai dokumentasi transaksi stok.</p>
                 </div>
             </div>
@@ -104,4 +117,5 @@
         });
     });
 </script>
+@include('admin.stock._cascade-filter')
 @endsection

@@ -5,7 +5,7 @@
         <x-customer.product-art :product="$product"></x-customer.product-art>
         <div class="product-card__body">
             <div class="product-card__topline">
-                <span class="product-card__category">{{ $product->category->name }}</span>
+                <span class="product-card__category">{{ $product->category->variety_name }}@if ($product->category->grade_name) &middot; {{ $product->category->grade_name }}@endif</span>
                 @if ($product->stock > 0)
                     <span class="availability {{ $product->isLowStock() ? 'availability--low' : 'availability--good' }}">
                         {{ $product->isLowStock() ? 'Stok menipis' : 'Tersedia' }}

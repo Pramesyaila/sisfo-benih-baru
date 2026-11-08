@@ -12,25 +12,26 @@ use Illuminate\Support\Str;
 class ProductController extends Controller
 {
     public function index(Request $request)
-    {
-        $products = Product::with('category.parent')
-            ->when($request->filled('q'), fn ($query) => $query->where('name', 'like', '%' . $request->q . '%'))
-            ->when($request->filled('category'), fn ($query) => $query->whereHas('category', fn ($category) => $category->where('id', $request->category)->orWhereHas('parent', fn ($parent) => $parent->where('id', $request->category))))
-            ->when($request->filled('variety'), fn ($query) => $query->whereHas('category', fn ($category) => $category->where('id', $request->variety)))
-            ->orderBy('name')
-            ->paginate(10)
-            ->withQueryString();
+{
+    $products = Product::with('category.parent.parent')
+        ->when($request->filled('q'), fn ($query) => $query->where('name', 'like', '%' . $request->q . '%'))
+        ->when($request->filled('category'), fn ($query) => $query->whereIn('category_id', $this->categoryIds($request->category)))
+        ->when($request->filled('variety'), fn ($query) => $query->whereIn('category_id', $this->categoryIds($request->variety)))
+        ->orderBy('name')
+        ->paginate(10)
+        ->withQueryString();
 
-        return view('admin.products.index', [
-            'products' => $products,
-            'categories' => $this->categoryTree(),
-        ]);
-    }
+    return view('admin.products.index', [
+        'products' => $products,
+        'categories' => $this->categoryTree(),
+    ]);
+}
 
     public function create()
     {
         return view('admin.products.create', [
             'categories' => $this->categoryTree(),
+            'leafCategories' => $this->leafCategories(),
         ]);
     }
 
@@ -53,6 +54,7 @@ class ProductController extends Controller
         return view('admin.products.edit', [
             'product' => $product,
             'categories' => $this->categoryTree(),
+            'leafCategories' => $this->leafCategories(),
         ]);
     }
 
@@ -85,13 +87,46 @@ class ProductController extends Controller
 
     protected function categoryTree()
     {
-        return Category::whereNull('parent_id')->with('children')->orderBy('name')->get();
+        return Category::whereNull('parent_id')
+        ->with('children.children')
+        ->orderBy('name')
+        ->get();
     }
+
+    // Node paling ujung untuk dropdown form produk,
+// mis. "Padi → Padi Sawah" atau "Ayam KUB → Bibit Ayam → Grade A".
+protected function leafCategories()
+{
+    return Category::whereDoesntHave('children')
+        ->with('parent.parent')
+        ->get()
+        ->sortBy('full_path')
+        ->values();
+}
+
+// ID kategori beserta seluruh turunannya, untuk filter.
+protected function categoryIds(mixed $id): array
+{
+    if (blank($id)) {
+        return [];
+    }
+
+    return Category::find($id)?->descendantsAndSelfIds() ?? [];
+}
 
     protected function validateData(Request $request): array
     {
         return $request->validate([
-            'category_id' => ['required', 'exists:categories,id'],
+            'category_id' => [
+            'bail',
+            'required',
+            'exists:categories,id',
+            function (string $attribute, mixed $value, \Closure $fail) {
+                if (Category::where('parent_id', $value)->exists()) {
+                    $fail('Pilih kategori paling ujung (mis. Grade A atau varietas tanpa kelas), bukan kategori yang masih memiliki turunan.');
+                }
+            },
+        ],
             'name' => ['required', 'string', 'max:255'],
             'description' => ['nullable', 'string'],
             'packaging_unit' => ['required', 'string', 'max:50'],
