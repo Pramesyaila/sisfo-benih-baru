@@ -3,7 +3,7 @@
 
 @section('content')
 <p>Yth.<br>
-Kepala Balai Besar Pengembangan dan Penerapan Modernisasi Pertanian<br>
+Kepala Balai Besar Pengembangan Sistem Modernisasi Pertanian<br>
 di<br>
 Tempat</p>
 
@@ -74,7 +74,7 @@ Saya yang bertanda tangan di bawah ini:</p>
         <p>{{ $order->documentLocation() }}, {{ $order->created_at->translatedFormat('d F Y') }}</p>
         <p>Pemohon,</p>
         <div class="h-20"></div>
-        <p class="font-semibold">{{ $order->user->name }}</p>
+        <p class="relative -top-4 font-semibold">{{ $order->user->name }}</p>
     </div>
 </div>
 @endsection

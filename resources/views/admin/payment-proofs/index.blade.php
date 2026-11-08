@@ -15,6 +15,7 @@
         <option value="menunggu" @selected(request('status', 'menunggu') === 'menunggu')>Menunggu Verifikasi</option>
         <option value="valid" @selected(request('status') === 'valid')>Valid</option>
         <option value="ditolak" @selected(request('status') === 'ditolak')>Ditolak</option>
+    
     </select>
 </form>
 
